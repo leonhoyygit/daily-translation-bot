@@ -3,6 +3,7 @@ import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, ContextTypes, filters
 from translator import route_translation
+from usage_tracker import log_usage, get_monthly_usage
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -37,7 +38,21 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• Indonesian ➡️ English ➡️ Chinese\n"
         "• English ➡️ Indonesian & Chinese\n"
         "• Chinese ➡️ English ➡️ Indonesian\n\n"
+        "Commands:\n"
+        "/quota - View monthly character usage\n"
+        "/help  - Show this message\n\n"
         "I ignore photos and non-text messages."
+    )
+
+async def cmd_quota(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    usage = get_monthly_usage()
+    limit = 500000
+    percentage = (usage / limit) * 100
+    await update.message.reply_text(
+        f"📊 **Monthly Quota Usage**\n\n"
+        f"Characters used: {usage:,}\n"
+        f"Monthly limit: {limit:,}\n"
+        f"Progress: {percentage:.2f}%"
     )
 
 # ── Message Handler ───────────────────────────────────────────────────────────
@@ -60,7 +75,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Language not supported or detection failed
             return
 
-        # 4. Format response
+        # 4. Log usage
+        chars_used = result["chars_used"]
+        total_monthly = log_usage(chars_used)
+
+        # 5. Format response
         source_label = LANG_NAMES.get(result["source_lang"], result["source_lang"])
         response = f"🌐 Translation from {source_label}:\n\n"
         
@@ -68,7 +87,9 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             label = LANG_NAMES.get(lang_code, lang_code)
             response += f"{label}:\n{trans_text}\n\n"
 
-        # 5. Reply to the message for context
+        response += f"───\n📏 Used: {chars_used} chars | Monthly: {total_monthly:,}/500,000"
+
+        # 6. Reply to the message for context
         await update.message.reply_text(response.strip())
         
     except Exception as e:
@@ -87,6 +108,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_command))
+    app.add_handler(CommandHandler("quota", cmd_quota))
     
     # Handle text messages, excluding commands
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))

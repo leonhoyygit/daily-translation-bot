@@ -53,29 +53,39 @@ def route_translation(text: str) -> dict:
     results = {
         "source_lang": source_lang,
         "original_text": text,
-        "translations": {}
+        "translations": {},
+        "chars_used": 0
     }
+
+    total_chars = 0
 
     if source_lang == "id":
         # ID -> EN -> ZH
         en_text = translate_text(text, "en")
+        total_chars += len(text)
         zh_text = translate_text(en_text, "zh")
+        total_chars += len(en_text)
         results["translations"] = {"en": en_text, "zh": zh_text}
         
     elif source_lang == "en":
         # EN -> ID & ZH
         id_text = translate_text(text, "id")
+        total_chars += len(text)
         zh_text = translate_text(text, "zh")
+        total_chars += len(text)
         results["translations"] = {"id": id_text, "zh": zh_text}
         
     elif source_lang == "zh":
         # ZH -> EN -> ID
         en_text = translate_text(text, "en")
+        total_chars += len(text)
         id_text = translate_text(en_text, "id")
+        total_chars += len(en_text)
         results["translations"] = {"en": en_text, "id": id_text}
         
     else:
         # Not one of our three core languages
         return None
 
+    results["chars_used"] = total_chars
     return results
