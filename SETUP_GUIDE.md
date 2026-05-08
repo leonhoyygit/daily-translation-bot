@@ -15,10 +15,10 @@
 3.  Enable the **Cloud Translation API**.
 4.  Go to **IAM & Admin > Service Accounts**.
 5.  Create a Service Account, then go to the **Keys** tab and **Add Key > Create new key (JSON)**.
-6.  Download the JSON file and rename it to `google_creds.json`. Place it in the `translation_bot/` folder.
+6.  Download the JSON file and rename it to `google_creds.json`. Place it in the `GeminiProject/Translation_Bot/` folder.
 
 ## 3. Local Setup
-1.  Create a `.env` file in the `translation_bot/` folder:
+1.  Create a `.env` file in the `GeminiProject/Translation_Bot/` folder:
     ```env
     TELEGRAM_TOKEN=your_telegram_token_here
     ```
@@ -31,7 +31,12 @@
     python bot.py
     ```
 
-## 4. Push to GitHub
+## 4. Quota & Usage Tracking
+*   **Monthly Limit:** The bot tracks usage against Google's 500,000 character/month free tier.
+*   **Check Quota:** Type `/quota` in Telegram to see your current monthly usage.
+*   **Daily Log:** The bot also shows the character count for each individual translation at the bottom of the message.
+
+## 5. Push to GitHub
 1.  Create a new repository on [GitHub](https://github.com/new).
 2.  Initialize your local repository:
     ```bash
@@ -47,10 +52,20 @@
     ```
     *(Note: Your `.env` and `google_creds.json` are excluded via `.gitignore` for security.)*
 
-## 5. Railway Deployment
+## 6. Railway Deployment
 1.  Create a new project on Railway.
 2.  Connect your GitHub repository.
 3.  Add the following **Variables** in the Railway dashboard:
     *   `TELEGRAM_TOKEN`: Your bot token.
     *   `GOOGLE_APPLICATION_CREDENTIALS_JSON`: Paste the entire content of your `google_creds.json` file here.
 4.  The `Procfile` and `runtime.txt` are already included, so Railway will automatically detect and run the bot.
+
+---
+
+## ⚠️ IMPORTANT REMARKS & REMINDERS
+
+1. **No Concurrent Running:** NEVER run the bot locally on your Mac (via terminal) while it is also running on Railway. This causes a **Conflict Error (409)** and the bot will stop working. Always stop the local bot before deploying to Railway.
+2. **Privacy Mode:** In **@BotFather**, set `/setprivacy` to **Disabled**. This is mandatory for the bot to see and translate group messages without being mentioned.
+3. **Reply Context:** The bot always **replies** to the original message it is translating. This keeps the conversation clear in groups.
+4. **Media Support:** The bot is built for **text only**. It will ignore photos, stickers, and videos.
+5. **Separate Projects:** Use a dedicated Google Cloud project for this bot to avoid mixing quotas with other applications.
