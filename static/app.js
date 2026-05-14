@@ -133,6 +133,11 @@ function setLanguage(lang) {
         if (translations[lang][key]) el.textContent = translations[lang][key];
     });
     document.querySelectorAll('.lang-pill button').forEach(btn => btn.classList.toggle('active', btn.id === `btn-${lang}`));
+    
+    // Refresh timeline if active to translate dynamic content
+    if (document.getElementById('tab-activities').classList.contains('active')) {
+        loadTimeline(selectedDate);
+    }
 }
 
 function switchTab(tabId) {
@@ -260,6 +265,18 @@ async function loadTimeline(date) {
     const container = document.getElementById('timeline-list');
     document.getElementById('activity-date-label').innerText = (date === new Date().toISOString().split('T')[0]) ? "Today" : date;
     container.innerHTML = `<p style="text-align:center;padding:20px;color:#ccc;">${translations[currentLanguage].loading}</p>`;
+    
+    const translateValue = (val) => {
+        if (!val) return "";
+        const map = {
+            "feeding": "feeding", "diaper": "diaper", "sleep": "sleep", "food": "food", "care": "care",
+            "Breast (L)": "breast_l", "Breast (R)": "breast_r", "Formula": "formula", "Water": "water",
+            "Pee": "pee", "Poop": "poop", "Both": "both"
+        };
+        const key = map[val] || map[val.toLowerCase()];
+        return key ? (translations[currentLanguage][key] || val) : val;
+    };
+
     try {
         const res = await fetch(`/api/daily/${date}`);
         const records = await res.json();
@@ -269,8 +286,9 @@ async function loadTimeline(date) {
             <div class="timeline-entry">
                 <div class="time-box">${r.Time}</div>
                 <div class="entry-details">
-                    <strong>${r.Type.toUpperCase()}</strong>
-                    <span>${r.Detail1} ${r.Detail2 ? '| ' + r.Detail2 : ''}</span>
+                    <strong>${translateValue(r.Type).toUpperCase()}</strong>
+                    <span>${translateValue(r.Detail1)} ${r.Detail2 ? '| ' + translateValue(r.Detail2) : ''}</span>
+                    ${r.Remarks ? `<p style="font-size:0.75rem;color:#aaa;margin-top:4px;">${r.Remarks}</p>` : ''}
                 </div>
             </div>
         `).join('');
