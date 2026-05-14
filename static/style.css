@@ -1,0 +1,276 @@
+:root {
+    --primary-color: #ff9a9e;
+    --secondary-color: #fad0c4;
+    --bg-color: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-color: #333;
+    --nav-height: 60px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+
+header {
+    background: linear-gradient(120deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: white;
+    padding: 15px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lang-switcher button {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid white;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    margin-left: 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.3s;
+}
+
+.lang-switcher button.active {
+    background: white;
+    color: var(--primary-color);
+}
+
+main {
+    padding: 20px;
+    padding-bottom: calc(var(--nav-height) + 20px);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.profile-section {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.baby-photo {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid var(--secondary-color);
+    background: #ddd;
+}
+
+.baby-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.daily-tasks {
+    flex: 1;
+    background: white;
+    padding: 10px;
+    border-radius: 15px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+}
+
+.daily-tasks h3 {
+    font-size: 1rem;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+}
+
+#task-list {
+    list-style: none;
+}
+
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    margin-bottom: 5px;
+}
+
+.input-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.card:active {
+    transform: scale(0.95);
+}
+
+.card .icon {
+    font-size: 2rem;
+    margin-bottom: 10px;
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: var(--nav-height);
+    background: white;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 100;
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #888;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.nav-item.active {
+    color: var(--primary-color);
+}
+
+.nav-icon {
+    font-size: 1.4rem;
+}
+
+/* Modals */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+}
+
+.modal-content {
+    background: white;
+    margin: 20% auto;
+    padding: 25px;
+    width: 90%;
+    border-radius: 25px;
+    position: relative;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    color: #aaa;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 1rem;
+}
+
+.btn-save {
+    width: 100%;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 15px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-save:active {
+    background: #ff7675;
+}
+
+/* Records List */
+.records-list {
+    margin-top: 20px;
+}
+
+.record-item {
+    background: white;
+    padding: 15px;
+    border-radius: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.03);
+}
+
+.record-header {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+}
+
+.record-details {
+    font-size: 0.9rem;
+    color: #666;
+}
