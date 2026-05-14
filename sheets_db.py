@@ -2,85 +2,119 @@ import os
 import gspread
 from google.oauth2.service_account import Credentials
 import json
+import logging
+
+# ── Logging Setup ─────────────────────────────────────────────────────────────
+logger = logging.getLogger(__name__)
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 
 GOOGLE_CREDS_PATH = "google_creds.json"
 SPREADSHEET_NAME = "Baby_Tracker_Data"
+SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
+
+def get_service_account_email():
+    creds = get_credentials()
+    if creds and hasattr(creds, 'service_account_email'):
+        return creds.service_account_email
+    return "Not Found"
 
 def get_credentials():
     scopes = [
         "https://www.googleapis.com/auth/spreadsheets",
         "https://www.googleapis.com/auth/drive"
     ]
-    if os.path.exists(GOOGLE_CREDS_PATH):
-        return Credentials.from_service_account_file(GOOGLE_CREDS_PATH, scopes=scopes)
-    elif "GOOGLE_APPLICATION_CREDENTIALS_JSON" in os.environ:
-        creds_dict = json.loads(os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"])
-        return Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    try:
+        if os.path.exists(GOOGLE_CREDS_PATH):
+            return Credentials.from_service_account_file(GOOGLE_CREDS_PATH, scopes=scopes)
+        elif "GOOGLE_APPLICATION_CREDENTIALS_JSON" in os.environ:
+            creds_dict = json.loads(os.environ["GOOGLE_APPLICATION_CREDENTIALS_JSON"])
+            return Credentials.from_service_account_info(creds_dict, scopes=scopes)
+    except Exception as e:
+        logger.error(f"Error loading credentials: {e}")
     return None
 
 def get_gc():
     creds = get_credentials()
     if creds:
-        return gspread.authorize(creds)
+        try:
+            return gspread.authorize(creds)
+        except Exception as e:
+            logger.error(f"Error authorizing gspread: {e}")
     return None
 
 def get_or_create_spreadsheet():
     gc = get_gc()
     if not gc:
+        logger.error("Failed to get gspread client (gc is None)")
         return None
+    
+    # Try opening by ID first if provided
+    if SPREADSHEET_ID:
+        try:
+            return gc.open_by_key(SPREADSHEET_ID)
+        except Exception as e:
+            logger.error(f"Error opening spreadsheet by ID '{SPREADSHEET_ID}': {e}")
+            # Fallback to name if ID fails
     
     try:
         return gc.open(SPREADSHEET_NAME)
     except gspread.SpreadsheetNotFound:
-        sh = gc.create(SPREADSHEET_NAME)
-        # Share with the service account email is automatic, 
-        # but we might want to share with the user's email if we knew it.
-        # For now, it's just in the service account's drive.
-        
-        # Initialize sheets
-        sh.add_worksheet(title="Daily_Records", rows="1000", cols="20")
-        sh.add_worksheet(title="Growth_Metrics", rows="1000", cols="5")
-        sh.add_worksheet(title="Daily_Tasks", rows="100", cols="3")
-        
-        # Remove default Sheet1
         try:
-            sheet1 = sh.worksheet("Sheet1")
-            sh.del_worksheet(sheet1)
-        except:
-            pass
+            logger.info(f"Spreadsheet '{SPREADSHEET_NAME}' not found. Creating...")
+            sh = gc.create(SPREADSHEET_NAME)
+            # Initialize sheets
+            sh.add_worksheet(title="Daily_Records", rows="1000", cols="20")
+            sh.add_worksheet(title="Growth_Metrics", rows="1000", cols="5")
+            sh.add_worksheet(title="Daily_Tasks", rows="100", cols="3")
             
-        # Add headers
-        daily = sh.worksheet("Daily_Records")
-        daily.append_row(["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
-        
-        growth = sh.worksheet("Growth_Metrics")
-        growth.append_row(["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
-        
-        tasks = sh.worksheet("Daily_Tasks")
-        tasks.append_row(["Task", "Status", "LastUpdated"])
-        # Add default tasks
-        default_tasks = [
-            ["Morning Feeding", "Pending", ""],
-            ["Vitamin AD", "Pending", ""],
-            ["Bath Time", "Pending", ""],
-            ["Tummy Time", "Pending", ""]
-        ]
-        tasks.append_rows(default_tasks)
-        
-        return sh
+            # Remove default Sheet1
+            try:
+                sheet1 = sh.worksheet("Sheet1")
+                sh.del_worksheet(sheet1)
+            except:
+                pass
+                
+            # Add headers
+            daily = sh.worksheet("Daily_Records")
+            daily.append_row(["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
+            
+            growth = sh.worksheet("Growth_Metrics")
+            growth.append_row(["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
+            
+            tasks = sh.worksheet("Daily_Tasks")
+            tasks.append_row(["Task", "Status", "LastUpdated"])
+            # Add default tasks
+            default_tasks = [
+                ["Morning Feeding", "Pending", ""],
+                ["Vitamin AD", "Pending", ""],
+                ["Bath Time", "Pending", ""],
+                ["Tummy Time", "Pending", ""]
+            ]
+            tasks.append_rows(default_tasks)
+            return sh
+        except Exception as e:
+            logger.error(f"Error creating spreadsheet: {e}")
+            return None
+    except Exception as e:
+        logger.error(f"Error opening spreadsheet: {e}")
+        return None
 
 def log_daily_record(record_type, time, detail1="", detail2="", detail3="", remarks="", date_str=None):
     from datetime import datetime
     if not date_str:
         date_str = datetime.now().strftime("%Y-%m-%d")
     
-    sh = get_or_create_spreadsheet()
-    if sh:
-        sheet = sh.worksheet("Daily_Records")
-        sheet.append_row([date_str, record_type, time, detail1, detail2, detail3, remarks])
-        return True
+    try:
+        sh = get_or_create_spreadsheet()
+        if sh:
+            sheet = sh.worksheet("Daily_Records")
+            sheet.append_row([date_str, record_type, time, detail1, detail2, detail3, remarks])
+            return True
+        else:
+            logger.error("log_daily_record: sh is None")
+    except Exception as e:
+        logger.error(f"Error logging daily record: {e}")
     return False
 
 def get_daily_records(date_str):

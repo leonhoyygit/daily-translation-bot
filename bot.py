@@ -55,6 +55,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "• Chinese ➡️ English ➡️ Indonesian\n\n"
         "Commands:\n"
         "/quota - View monthly character usage\n"
+        "/setup - Google Sheets sharing instructions\n"
         "/help  - Show this message\n\n"
         "I ignore photos and non-text messages."
     )
@@ -68,6 +69,18 @@ async def cmd_quota(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Characters used: {usage:,}\n"
         f"Monthly limit: {limit:,}\n"
         f"Progress: {percentage:.2f}%"
+    )
+
+async def cmd_setup(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    email = sheets_db.get_service_account_email()
+    await update.message.reply_text(
+        f"🛠 **Google Sheets Setup**\n\n"
+        f"To sync data to your Google Sheet, please follow these steps:\n\n"
+        f"1. Open your Google Sheet.\n"
+        f"2. Click **Share** (top right).\n"
+        f"3. Add this email as an **Editor**:\n"
+        f"`{email}`\n\n"
+        f"4. (Optional) Copy your Spreadsheet ID from the URL and set it as `SPREADSHEET_ID` in your environment variables if the name doesn't match 'Baby_Tracker_Data'."
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -109,6 +122,7 @@ async def lifespan(app: FastAPI):
     bot_app.add_handler(CommandHandler("start", start))
     bot_app.add_handler(CommandHandler("help", help_command))
     bot_app.add_handler(CommandHandler("quota", cmd_quota))
+    bot_app.add_handler(CommandHandler("setup", cmd_setup))
     bot_app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     await bot_app.initialize()
@@ -145,18 +159,23 @@ async def index(request: Request):
 
 @app.post("/api/daily")
 async def add_daily(record: dict):
-    success = sheets_db.log_daily_record(
-        record_type=record.get("type"),
-        time=record.get("time"),
-        detail1=record.get("detail1", ""),
-        detail2=record.get("detail2", ""),
-        detail3=record.get("detail3", ""),
-        remarks=record.get("remarks", ""),
-        date_str=record.get("date")
-    )
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to log to Google Sheets")
-    return {"status": "success"}
+    try:
+        success = sheets_db.log_daily_record(
+            record_type=record.get("type"),
+            time=record.get("time"),
+            detail1=record.get("detail1", ""),
+            detail2=record.get("detail2", ""),
+            detail3=record.get("detail3", ""),
+            remarks=record.get("remarks", ""),
+            date_str=record.get("date")
+        )
+        if not success:
+            logger.error(f"Failed to log record to Google Sheets: {record}")
+            raise HTTPException(status_code=500, detail="Failed to log to Google Sheets")
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Exception in add_daily: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/daily/{date_str}")
 async def get_daily(date_str: str):
