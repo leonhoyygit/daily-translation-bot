@@ -353,3 +353,109 @@ main {
     position: absolute;
     bottom: 6px;
 }
+
+/* Calendar Navigation Premium */
+.calendar-card-premium {
+    background: white;
+    padding: 20px;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+}
+
+.cal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+.cal-header h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.cal-nav-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #f0f0f0;
+    background: white;
+    font-size: 1rem;
+    color: #444;
+    cursor: pointer;
+    transition: 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cal-nav-btn:active {
+    background: #f9f9f9;
+    transform: scale(0.9);
+}
+
+/* Growth Tab Premium */
+.growth-input-card {
+    background: white;
+    padding: 25px;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+    margin-bottom: 25px;
+}
+
+.growth-input-card h3 {
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.field-pill {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field-pill label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #999;
+    padding-left: 4px;
+}
+
+.field-pill input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 14px;
+    border: 1px solid #f0f0f0;
+    background: #f9f9f9;
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.charts-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.chart-box {
+    background: white;
+    padding: 20px;
+    border-radius: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+}
+
+.chart-box h4 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: #555;
+}
