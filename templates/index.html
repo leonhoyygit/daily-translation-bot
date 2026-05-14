@@ -81,6 +81,10 @@
             <section id="tab-growth" class="tab-content">
                 <div class="growth-input-card">
                     <h3 data-i18n="log_growth">Growth Metrics</h3>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label data-i18n="calendar">Calendar</label>
+                        <input type="date" id="growth-date">
+                    </div>
                     <div class="input-row">
                         <div class="field-pill">
                             <label data-i18n="weight">W (kg)</label>
@@ -106,6 +110,10 @@
                     <div class="chart-box">
                         <h4 data-i18n="height_chart">Height Trend</h4>
                         <canvas id="heightChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h4 data-i18n="head_chart">Head Circumference</h4>
+                        <canvas id="headChart"></canvas>
                     </div>
                 </div>
             </section>

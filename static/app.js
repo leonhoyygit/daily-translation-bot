@@ -37,6 +37,7 @@ const translations = {
         loading: "Loading...",
         weight_chart: "Weight Trend",
         height_chart: "Height Trend",
+        head_chart: "Head Circumference",
         breast_l: "Breast (L)",
         breast_r: "Breast (R)",
         formula: "Formula",
@@ -75,6 +76,7 @@ const translations = {
         loading: "Memuat...",
         weight_chart: "Tren Berat",
         height_chart: "Tren Tinggi",
+        head_chart: "Lingkar Kepala",
         breast_l: "ASI (Ki)",
         breast_r: "ASI (Ka)",
         formula: "Formula",
@@ -113,6 +115,7 @@ const translations = {
         loading: "加載中...",
         weight_chart: "體重趨勢",
         height_chart: "身高趨勢",
+        head_chart: "頭圍趨勢",
         breast_l: "母乳 (左)",
         breast_r: "母乳 (右)",
         formula: "配方奶",
@@ -329,11 +332,26 @@ function initCharts() {
     const common = (label, color) => ({
         type: 'line',
         data: { labels: [], datasets: [{ label, data: [], borderColor: color, backgroundColor: color + '11', fill: true, tension: 0.4, pointRadius: 4 }] },
-        options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { display: false } } } }
+        options: { 
+            responsive: true, 
+            plugins: { legend: { display: false } }, 
+            scales: { 
+                x: { 
+                    display: true, 
+                    grid: { display: false },
+                    ticks: { font: { size: 10 }, color: '#ccc' }
+                }, 
+                y: { grid: { display: false } } 
+            } 
+        }
     });
-    if (charts.weight) charts.weight.destroy(); if (charts.height) charts.height.destroy();
+    if (charts.weight) charts.weight.destroy(); 
+    if (charts.height) charts.height.destroy();
+    if (charts.head) charts.head.destroy();
+
     charts.weight = new Chart(document.getElementById('weightChart'), common('Weight', '#ff4d4d'));
     charts.height = new Chart(document.getElementById('heightChart'), common('Height', '#ffb6c1'));
+    charts.head = new Chart(document.getElementById('headChart'), common('Head', '#ffd700'));
 }
 
 function updateCharts(data) {
@@ -341,22 +359,20 @@ function updateCharts(data) {
     const labels = data.map(h => h.Date);
     charts.weight.data.labels = labels; charts.weight.data.datasets[0].data = data.map(h => h['Weight (kg)']); charts.weight.update();
     charts.height.data.labels = labels; charts.height.data.datasets[0].data = data.map(h => h['Height (cm)']); charts.height.update();
+    charts.head.data.labels = labels; charts.head.data.datasets[0].data = data.map(h => h['Head (cm)']); charts.head.update();
 }
 
 async function saveGrowth() {
     const btn = document.querySelector('#tab-growth .btn-primary-pill');
     const originalText = btn.innerText;
     
-    const localDate = new Date();
-    const dateStr = localDate.getFullYear() + '-' + 
-                    (localDate.getMonth() + 1).toString().padStart(2, '0') + '-' + 
-                    localDate.getDate().toString().padStart(2, '0');
+    const chosenDate = document.getElementById('growth-date').value;
 
     const data = { 
         weight: document.getElementById('growth-weight').value, 
         height: document.getElementById('growth-height').value, 
         head: document.getElementById('growth-head').value, 
-        date: dateStr 
+        date: chosenDate 
     };
     
     if (!data.weight || !data.height) {
@@ -376,6 +392,8 @@ async function saveGrowth() {
         if (res.ok) {
             loadGrowthHistory(); 
             tg.showAlert(translations[currentLanguage].success);
+            selectedDate = chosenDate;
+            renderCalendar();
         } else {
             throw new Error('Growth save failed');
         }
@@ -390,3 +408,4 @@ async function saveGrowth() {
 // ── Init ────────────────────────────────────────────────────────────────────
 setLanguage('en');
 switchTab('daily');
+document.getElementById('growth-date').value = selectedDate;
