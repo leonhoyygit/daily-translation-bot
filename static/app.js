@@ -149,6 +149,9 @@ function openForm(type) {
     const t = translations[currentLanguage];
     let html = `<h2 style="margin-bottom:25px;text-align:center;">${t[type]}</h2>`;
 
+    // Common Date field for all forms
+    html += `<div class="form-group"><label data-i18n="calendar">${t.calendar}</label><input type="date" id="f-date"></div>`;
+
     if (type === 'sleep') {
         html += `
             <div class="form-group"><label>${t.start_time}</label><input type="time" id="f-start"></div>
@@ -193,8 +196,11 @@ function openForm(type) {
     body.innerHTML = html;
     overlay.classList.add('active');
     
+    // Set default values
     const now = new Date();
     const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+    
+    document.getElementById('f-date').value = selectedDate;
     if (document.getElementById('f-time')) document.getElementById('f-time').value = timeStr;
     if (document.getElementById('f-start')) document.getElementById('f-start').value = timeStr;
 }
@@ -207,11 +213,7 @@ async function saveDaily(type) {
     btn.disabled = true;
     btn.innerText = translations[currentLanguage].loading;
 
-    // Use local date instead of UTC to avoid "day-ahead" issues
-    const localDate = new Date();
-    const dateStr = localDate.getFullYear() + '-' + 
-                    (localDate.getMonth() + 1).toString().padStart(2, '0') + '-' + 
-                    localDate.getDate().toString().padStart(2, '0');
+    const chosenDate = document.getElementById('f-date').value;
 
     const data = {
         type: type,
@@ -219,7 +221,7 @@ async function saveDaily(type) {
         detail1: document.getElementById('f-detail1')?.value || "",
         detail2: document.getElementById('f-detail2')?.value || document.getElementById('f-end')?.value || "",
         remarks: document.getElementById('f-remarks')?.value || "",
-        date: dateStr
+        date: chosenDate
     };
 
     try {
@@ -233,10 +235,11 @@ async function saveDaily(type) {
             tg.HapticFeedback.notificationOccurred('success'); 
             closeForm(); 
             tg.showAlert(translations[currentLanguage].success);
-            // Update the selected date to today if they just logged something for today
-            selectedDate = dateStr;
-            // Immediate refresh of timeline if we are on the activities tab
-            loadTimeline(dateStr);
+            
+            // Switch view to the date that was just saved
+            selectedDate = chosenDate;
+            loadTimeline(chosenDate);
+            renderCalendar(); // Refresh dots
         } else {
             throw new Error('Save failed');
         }
