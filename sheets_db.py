@@ -43,62 +43,60 @@ def get_gc():
             logger.error(f"Error authorizing gspread: {e}")
     return None
 
+def ensure_worksheet(sh, title, headers):
+    try:
+        return sh.worksheet(title)
+    except gspread.WorksheetNotFound:
+        logger.info(f"Worksheet '{title}' not found. Creating...")
+        sheet = sh.add_worksheet(title=title, rows="1000", cols="20")
+        sheet.append_row(headers)
+        return sheet
+
 def get_or_create_spreadsheet():
     gc = get_gc()
     if not gc:
         logger.error("Failed to get gspread client (gc is None)")
         return None
     
+    sh = None
     # Try opening by ID first if provided
     if SPREADSHEET_ID:
         try:
-            return gc.open_by_key(SPREADSHEET_ID)
+            sh = gc.open_by_key(SPREADSHEET_ID)
         except Exception as e:
             logger.error(f"Error opening spreadsheet by ID '{SPREADSHEET_ID}': {e}")
-            # Fallback to name if ID fails
     
-    try:
-        return gc.open(SPREADSHEET_NAME)
-    except gspread.SpreadsheetNotFound:
+    if not sh:
         try:
-            logger.info(f"Spreadsheet '{SPREADSHEET_NAME}' not found. Creating...")
-            sh = gc.create(SPREADSHEET_NAME)
-            # Initialize sheets
-            sh.add_worksheet(title="Daily_Records", rows="1000", cols="20")
-            sh.add_worksheet(title="Growth_Metrics", rows="1000", cols="5")
-            sh.add_worksheet(title="Daily_Tasks", rows="100", cols="3")
-            
-            # Remove default Sheet1
+            sh = gc.open(SPREADSHEET_NAME)
+        except gspread.SpreadsheetNotFound:
             try:
-                sheet1 = sh.worksheet("Sheet1")
-                sh.del_worksheet(sheet1)
-            except:
-                pass
-                
-            # Add headers
-            daily = sh.worksheet("Daily_Records")
-            daily.append_row(["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
-            
-            growth = sh.worksheet("Growth_Metrics")
-            growth.append_row(["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
-            
-            tasks = sh.worksheet("Daily_Tasks")
-            tasks.append_row(["Task", "Status", "LastUpdated"])
-            # Add default tasks
+                logger.info(f"Spreadsheet '{SPREADSHEET_NAME}' not found. Creating...")
+                sh = gc.create(SPREADSHEET_NAME)
+            except Exception as e:
+                logger.error(f"Error creating spreadsheet: {e}")
+                return None
+        except Exception as e:
+            logger.error(f"Error opening spreadsheet: {e}")
+            return None
+
+    if sh:
+        # Ensure all required worksheets exist
+        ensure_worksheet(sh, "Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
+        ensure_worksheet(sh, "Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
+        tasks_sheet = ensure_worksheet(sh, "Daily_Tasks", ["Task", "Status", "LastUpdated"])
+        
+        # Add default tasks if Daily_Tasks was just created or is empty (only has headers)
+        if len(tasks_sheet.get_all_values()) <= 1:
             default_tasks = [
                 ["Morning Feeding", "Pending", ""],
                 ["Vitamin AD", "Pending", ""],
                 ["Bath Time", "Pending", ""],
                 ["Tummy Time", "Pending", ""]
             ]
-            tasks.append_rows(default_tasks)
-            return sh
-        except Exception as e:
-            logger.error(f"Error creating spreadsheet: {e}")
-            return None
-    except Exception as e:
-        logger.error(f"Error opening spreadsheet: {e}")
-        return None
+            tasks_sheet.append_rows(default_tasks)
+
+    return sh
 
 def log_daily_record(record_type, time, detail1="", detail2="", detail3="", remarks="", date_str=None):
     from datetime import datetime
