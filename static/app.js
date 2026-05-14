@@ -8,7 +8,7 @@ let charts = {};
 
 const translations = {
     en: {
-        baby_quote: "Growing with love ❤️",
+        baby_quote: "Growing with love every day! ❤️",
         sleep: "Sleep",
         diaper: "Diaper",
         feeding: "Feeding",
