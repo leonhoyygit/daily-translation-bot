@@ -3,17 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Baby Tracker</title>
+    <title>Andrea's Baby Tracker</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div id="app">
-        <!-- Header with Language Switcher -->
+        <!-- Profile & Language Switcher Header -->
         <header>
-            <div class="header-content">
-                <h1 id="app-title" data-i18n="app_title">Baby Tracker</h1>
+            <div class="header-top">
+                <div class="profile-container">
+                    <div class="baby-photo">
+                        <img src="/static/baby_photo.jpg" alt="Andrea" id="baby-img" onerror="this.src='/static/baby_placeholder.png'">
+                    </div>
+                    <div class="baby-info">
+                        <h1 id="baby-name">Andrea</h1>
+                        <p id="baby-quote" data-i18n="baby_quote">Growing with love every day! ❤️</p>
+                    </div>
+                </div>
                 <div class="lang-switcher">
                     <button onclick="setLanguage('en')" id="btn-en">EN</button>
                     <button onclick="setLanguage('id')" id="btn-id">ID</button>
@@ -22,80 +30,70 @@
             </div>
         </header>
 
-        <!-- Main Content Area -->
+        <!-- Main Content -->
         <main id="main-content">
             <!-- Tab 1: Daily Tracker -->
             <section id="tab-daily" class="tab-content active">
-                <div class="profile-section">
-                    <div class="baby-photo">
-                        <!-- User's daughter photo -->
-                        <img src="/static/baby_photo.jpg" alt="Daughter" id="baby-img" onerror="this.src='/static/baby_placeholder.png'">
-                    </div>
-                    <div class="daily-tasks">
-                        <div class="tasks-header">
-                            <h3 data-i18n="daily_tasks">Daily Tasks</h3>
-                            <button class="btn-add-task" onclick="showAddTask()">+</button>
-                        </div>
-                        <ul id="task-list"></ul>
-                    </div>
-                </div>
-
                 <div class="input-grid">
-                    <!-- Sleep -->
-                    <div class="card" onclick="openForm('sleep')">
+                    <div class="card stylish-card" onclick="openForm('sleep')">
                         <span class="icon">😴</span>
                         <span data-i18n="sleep">Sleep</span>
                     </div>
-                    <!-- Diaper -->
-                    <div class="card" onclick="openForm('diaper')">
+                    <div class="card stylish-card" onclick="openForm('diaper')">
                         <span class="icon">👶</span>
                         <span data-i18n="diaper">Diaper</span>
                     </div>
-                    <!-- Feeding -->
-                    <div class="card" onclick="openForm('feeding')">
+                    <div class="card stylish-card" onclick="openForm('feeding')">
                         <span class="icon">🍼</span>
                         <span data-i18n="feeding">Feeding</span>
                     </div>
-                    <!-- Solid Food -->
-                    <div class="card" onclick="openForm('food')">
+                    <div class="card stylish-card" onclick="openForm('food')">
                         <span class="icon">🥣</span>
                         <span data-i18n="food">Solid Food</span>
                     </div>
-                    <!-- Care/Love -->
-                    <div class="card" onclick="openForm('care')">
+                    <div class="card stylish-card" onclick="openForm('care')">
                         <span class="icon">❤️</span>
                         <span data-i18n="care">Care & Love</span>
                     </div>
                 </div>
-
-                <!-- Daily Activity Feed -->
-                <div class="activity-feed-section">
-                    <h3 data-i18n="days_activity">Today's Activities</h3>
-                    <div id="daily-activity-list" class="records-list">
-                        <!-- Real-time activities will appear here -->
-                    </div>
+                
+                <div class="recent-activity-preview">
+                    <h3 data-i18n="latest_logs">Latest Logs</h3>
+                    <div id="latest-logs-list" class="mini-timeline"></div>
                 </div>
             </section>
 
-            <!-- Tab 2: Calendar -->
+            <!-- Tab 2: Calendar & Activities -->
             <section id="tab-calendar" class="tab-content">
-                <div id="calendar-container" class="card">
-                    <div class="calendar-nav">
-                        <button onclick="prevMonth()">&lt;</button>
-                        <h3 id="current-month-year"></h3>
-                        <button onclick="nextMonth()">&gt;</button>
+                <div class="sub-tab-nav">
+                    <button onclick="switchSubTab('cal-view')" id="btn-cal-view" class="active" data-i18n="calendar">Calendar</button>
+                    <button onclick="switchSubTab('act-view')" id="btn-act-view" data-i18n="activities">Activities</button>
+                </div>
+
+                <div id="sub-tab-cal-view" class="sub-tab-content active">
+                    <div id="calendar-container" class="card cartoon-card">
+                        <div class="calendar-nav">
+                            <button onclick="prevMonth()">🍞</button>
+                            <h3 id="current-month-year"></h3>
+                            <button onclick="nextMonth()">🍞</button>
+                        </div>
+                        <div id="calendar-grid"></div>
                     </div>
-                    <div id="calendar-grid"></div>
                 </div>
-                <div id="calendar-records-header">
-                    <h3 id="selected-date-label"></h3>
+
+                <div id="sub-tab-act-view" class="sub-tab-content">
+                    <div class="timeline-container card cartoon-card">
+                        <h3 id="selected-date-label"></h3>
+                        <div id="timeline-list" class="timeline">
+                            <!-- Chronological timeline here -->
+                        </div>
+                    </div>
                 </div>
-                <div id="calendar-records" class="records-list"></div>
             </section>
 
             <!-- Tab 3: Growth -->
             <section id="tab-growth" class="tab-content">
-                <div class="growth-form card">
+                <div class="growth-form card cartoon-card">
                     <h3 data-i18n="log_growth">Log Monthly Growth</h3>
                     <div class="form-row">
                         <div class="form-group">
@@ -128,15 +126,13 @@
                         <canvas id="headChart"></canvas>
                     </div>
                 </div>
-                
-                <div id="growth-history" class="records-list"></div>
             </section>
         </main>
 
         <!-- Bottom Navigation -->
         <nav class="bottom-nav">
             <button onclick="switchTab('daily')" class="nav-item active" id="nav-daily">
-                <span class="nav-icon">📝</span>
+                <span class="nav-icon">⭐</span>
                 <span class="nav-label" data-i18n="tab_daily">Daily</span>
             </button>
             <button onclick="switchTab('calendar')" class="nav-item" id="nav-calendar">
@@ -149,9 +145,9 @@
             </button>
         </nav>
 
-        <!-- Modal for Forms -->
+        <!-- Modal -->
         <div id="form-modal" class="modal">
-            <div class="modal-content">
+            <div class="modal-content cartoon-modal">
                 <span class="close" onclick="closeForm()">&times;</span>
                 <div id="modal-body"></div>
             </div>

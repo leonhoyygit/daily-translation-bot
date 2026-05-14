@@ -8,136 +8,127 @@ let charts = {};
 
 const translations = {
     en: {
-        app_title: "Baby Tracker",
-        daily_tasks: "Daily Tasks",
+        baby_quote: "Growing with love every day! ❤️",
         sleep: "Sleep",
         diaper: "Diaper",
         feeding: "Feeding",
         food: "Solid Food",
         care: "Care & Love",
+        latest_logs: "Latest Logs",
+        calendar: "Calendar",
+        activities: "Activities",
         tab_daily: "Daily",
-        tab_calendar: "Calendar",
+        tab_calendar: "History",
         tab_growth: "Growth",
-        select_date: "Select a date to view records",
-        log_growth: "Log Monthly Growth",
+        log_growth: "Log Growth",
         weight: "Weight (kg)",
         height: "Height (cm)",
-        head: "Head Circ. (cm)",
+        head: "Head (cm)",
         save: "Save",
-        days_activity: "Today's Activities",
         time: "Time",
-        start_time: "Start Time",
-        end_time: "End Time",
+        start_time: "Start",
+        end_time: "End",
         size: "Size",
         type: "Type",
         remarks: "Remarks",
         amount: "Amount (ml)",
         source: "Source",
-        description: "Description",
-        success: "Saved successfully!",
-        error: "Error saving data.",
-        loading: "Loading...",
-        weight_chart: "Weight Trend",
-        height_chart: "Height Trend",
-        head_chart: "Head Circ. Trend",
-        add_task: "Add Task",
-        task_name: "Task Name",
-        cancel: "Cancel",
+        description: "What happened?",
+        success: "Yay! Saved! 🥯",
+        error: "Oh no! Error! 🍞",
+        loading: "Loading... 🥯",
+        weight_chart: "Weight Curve",
+        height_chart: "Height Curve",
+        head_chart: "Head Curve",
         breast_l: "Breast (L)",
         breast_r: "Breast (R)",
         formula: "Formula",
         water: "Water",
-        pee: "Pee",
-        poop: "Poop",
-        both: "Both"
+        pee: "Pee 💧",
+        poop: "Poop 💩",
+        both: "Both 🌈"
     },
     id: {
-        app_title: "Pelacak Bayi",
-        daily_tasks: "Tugas Harian",
+        baby_quote: "Tumbuh dengan cinta setiap hari! ❤️",
         sleep: "Tidur",
         diaper: "Popok",
         feeding: "Menyusui",
-        food: "Makanan Padat",
-        care: "Perawatan & Kasih",
+        food: "Makanan",
+        care: "Perawatan",
+        latest_logs: "Catatan Terbaru",
+        calendar: "Kalender",
+        activities: "Aktivitas",
         tab_daily: "Harian",
-        tab_calendar: "Kalender",
-        tab_growth: "Pertumbuhan",
-        select_date: "Pilih tanggal untuk melihat catatan",
-        log_growth: "Catat Pertumbuhan Bulanan",
+        tab_calendar: "Riwayat",
+        tab_growth: "Tumbuh",
+        log_growth: "Catat Pertumbuhan",
         weight: "Berat (kg)",
         height: "Tinggi (cm)",
-        head: "Lingkar Kepala (cm)",
+        head: "Kepala (cm)",
         save: "Simpan",
-        days_activity: "Aktivitas Hari Ini",
         time: "Waktu",
-        start_time: "Waktu Mulai",
-        end_time: "Waktu Selesai",
+        start_time: "Mulai",
+        end_time: "Selesai",
         size: "Ukuran",
         type: "Tipe",
-        remarks: "Keterangan",
+        remarks: "Catatan",
         amount: "Jumlah (ml)",
         source: "Sumber",
-        description: "Deskripsi",
-        success: "Berhasil disimpan!",
-        error: "Gagal menyimpan data.",
-        loading: "Memuat...",
-        weight_chart: "Tren Berat",
-        height_chart: "Tren Tinggi",
-        head_chart: "Tren Lingkar Kepala",
-        add_task: "Tambah Tugas",
-        task_name: "Nama Tugas",
-        cancel: "Batal",
+        description: "Apa yang terjadi?",
+        success: "Hore! Disimpan! 🥯",
+        error: "Waduh! Galat! 🍞",
+        loading: "Memuat... 🥯",
+        weight_chart: "Kurva Berat",
+        height_chart: "Kurva Tinggi",
+        head_chart: "Kurva Kepala",
         breast_l: "ASI (Kiri)",
         breast_r: "ASI (Kanan)",
-        formula: "Susu Formula",
-        water: "Air Putih",
-        pee: "Pipis",
-        poop: "BAB",
-        both: "Keduanya"
+        formula: "Formula",
+        water: "Air",
+        pee: "Pipis 💧",
+        poop: "Pup 💩",
+        both: "Keduanya 🌈"
     },
     zh: {
-        app_title: "寶寶成長記錄",
-        daily_tasks: "每日任務",
-        sleep: "睡眠",
-        diaper: "換尿布",
-        feeding: "喂奶",
-        food: "輔食",
+        baby_quote: "每天都在愛中快樂成長！❤️",
+        sleep: "睡眠記錄",
+        diaper: "換尿片",
+        feeding: "喂奶時間",
+        food: "輔食添加",
         care: "關愛記錄",
-        tab_daily: "日常",
-        tab_calendar: "日曆",
-        tab_growth: "成長",
-        select_date: "請選擇日期查看記錄",
-        log_growth: "記錄每月成長",
+        latest_logs: "最近記錄",
+        calendar: "日曆瀏覽",
+        activities: "活動詳情",
+        tab_daily: "日常記錄",
+        tab_calendar: "成長回顧",
+        tab_growth: "成長數值",
+        log_growth: "記錄成長數據",
         weight: "體重 (kg)",
         height: "身高 (cm)",
         head: "頭圍 (cm)",
-        save: "保存",
-        days_activity: "今日記錄回顧",
+        save: "儲存記錄",
         time: "時間",
         start_time: "開始時間",
         end_time: "結束時間",
-        size: "尺寸",
+        size: "尿片尺寸",
         type: "類型",
-        remarks: "備註",
-        amount: "奶量 (ml)",
-        source: "方式",
-        description: "描述",
-        success: "保存成功！",
-        error: "保存失敗。",
-        loading: "加載中...",
-        weight_chart: "體重趨勢",
-        height_chart: "身高趨勢",
-        head_chart: "頭圍趨勢",
-        add_task: "添加任務",
-        task_name: "任務名稱",
-        cancel: "取消",
+        remarks: "備註事項",
+        amount: "份量 (ml)",
+        source: "喂哺方式",
+        description: "詳情描述",
+        success: "好耶！儲存成功！🥯",
+        error: "糟糕！出錯了！🍞",
+        loading: "正在加載中... 🥯",
+        weight_chart: "體重增長曲線",
+        height_chart: "身高增長曲線",
+        head_chart: "頭圍增長曲線",
         breast_l: "母乳 (左)",
         breast_r: "母乳 (右)",
         formula: "配方奶",
-        water: "水",
-        pee: "小便",
-        poop: "大便",
-        both: "大小便"
+        water: "飲水",
+        pee: "小解 💧",
+        poop: "大解 💩",
+        both: "大小解 🌈"
     }
 };
 
@@ -168,8 +159,18 @@ function switchTab(tabId) {
         loadGrowthHistory();
         setTimeout(initCharts, 100);
     }
-    if (tabId === 'daily') loadTasks();
+    if (tabId === 'daily') loadLatestLogs();
     if (tabId === 'calendar') renderCalendar();
+}
+
+function switchSubTab(subTabId) {
+    document.querySelectorAll('.sub-tab-content').forEach(tab => tab.classList.remove('active'));
+    document.getElementById(`sub-tab-${subTabId}`).classList.add('active');
+    
+    document.querySelectorAll('.sub-tab-nav button').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`btn-${subTabId}`).classList.add('active');
+
+    if (subTabId === 'act-view') loadTimeline(selectedDate);
 }
 
 // ── Daily Forms ─────────────────────────────────────────────────────────────
@@ -178,7 +179,7 @@ function openForm(type) {
     const modal = document.getElementById('form-modal');
     const body = document.getElementById('modal-body');
     const t = translations[currentLanguage];
-    let html = `<h2>${t[type]}</h2>`;
+    let html = `<h2 style="color:var(--accent-red);margin-bottom:20px;text-align:center;">${t[type]} 🥯</h2>`;
 
     if (type === 'sleep') {
         html += `
@@ -207,20 +208,20 @@ function openForm(type) {
     } else if (type === 'food') {
         html += `
             <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
-            <div class="form-group"><label>${t.description}</label><textarea id="f-detail1"></textarea></div>
+            <div class="form-group"><label>${t.description}</label><textarea id="f-detail1" placeholder="What did Andrea eat?"></textarea></div>
         `;
     } else if (type === 'care') {
         html += `
             <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
             <div class="form-group"><label>${t.description}</label><select id="f-detail1">
-                <option value="DHA">DHA</option><option value="Probiotics">Probiotics</option><option value="Vitamin AD">Vitamin AD</option>
-                <option value="Bath">Bath</option><option value="Massage">Massage</option><option value="Sunlight">Sunlight</option>
+                <option value="DHA">DHA 💊</option><option value="Probiotics">Probiotics 🧬</option><option value="Vitamin AD">Vitamin AD ☀️</option>
+                <option value="Bath">Bath 🛁</option><option value="Massage">Massage 💆‍♀️</option><option value="Sunlight">Sunlight ☀️</option>
             </select></div>
         `;
     }
 
     html += `
-        <div class="form-group"><label>${t.remarks}</label><textarea id="f-remarks"></textarea></div>
+        <div class="form-group"><label>${t.remarks}</label><textarea id="f-remarks" placeholder="Any special notes?"></textarea></div>
         <button class="btn-save" onclick="saveDaily('${type}')">${t.save}</button>
     `;
 
@@ -257,43 +258,66 @@ async function saveDaily(type) {
             tg.HapticFeedback.notificationOccurred('success');
             closeForm();
             tg.showAlert(translations[currentLanguage].success);
-            loadDailyActivity(); // Refresh feed after save
+            loadLatestLogs();
+            if (selectedDate === data.date) loadTimeline(selectedDate);
         }
     } catch (e) {
         tg.showAlert(translations[currentLanguage].error);
     }
 }
 
-async function loadDailyActivity() {
+// ── Activity Timeline ────────────────────────────────────────────────────────
+
+async function loadLatestLogs() {
     const today = new Date().toISOString().split('T')[0];
-    const container = document.getElementById('daily-activity-list');
+    const container = document.getElementById('latest-logs-list');
     
     try {
         const res = await fetch(`/api/daily/${today}`);
         const records = await res.json();
         
         if (records.length === 0) {
-            container.innerHTML = `<p style="text-align:center;color:#bbb;margin-top:20px;">No activities yet today.</p>`;
+            container.innerHTML = `<p style="text-align:center;color:#bbb;padding:10px;">No logs yet today! 🍞</p>`;
             return;
         }
         
-        // Sort by time descending
         records.sort((a, b) => b.Time.localeCompare(a.Time));
 
+        container.innerHTML = records.slice(0, 3).map(r => `
+            <div style="font-size:0.85rem;padding:5px 0;border-bottom:1px dashed var(--secondary-color);">
+                <span style="color:var(--accent-red);font-weight:bold;">${r.Time}</span>: ${r.Type.toUpperCase()} - ${r.Detail1.substring(0, 15)}...
+            </div>
+        `).join('');
+    } catch (e) {}
+}
+
+async function loadTimeline(date) {
+    const container = document.getElementById('timeline-list');
+    container.innerHTML = translations[currentLanguage].loading;
+    
+    try {
+        const res = await fetch(`/api/daily/${date}`);
+        const records = await res.json();
+        
+        if (records.length === 0) {
+            container.innerHTML = `<p style="text-align:center;color:#bbb;padding:20px;">No activities recorded for this day! 🍞</p>`;
+            return;
+        }
+        
+        records.sort((a, b) => a.Time.localeCompare(b.Time));
+
         container.innerHTML = records.map(r => `
-            <div class="record-item">
-                <div class="record-header">
-                    <span>${r.Type.toUpperCase()}</span>
-                    <span>${r.Time}</span>
-                </div>
-                <div class="record-details">
+            <div class="timeline-item">
+                <span class="timeline-time">${r.Time}</span>
+                <strong style="color:var(--primary-color);">${r.Type.toUpperCase()}</strong>
+                <div style="font-size:0.9rem;margin-top:5px;">
                     ${r.Detail1} ${r.Detail2 ? '| ' + r.Detail2 : ''}
-                    ${r.Remarks ? '<br><i>' + r.Remarks + '</i>' : ''}
+                    ${r.Remarks ? '<br><small style="color:#888;">' + r.Remarks + '</small>' : ''}
                 </div>
             </div>
         `).join('');
     } catch (e) {
-        console.error("Error loading daily activity:", e);
+        container.innerHTML = 'Error loading timeline.';
     }
 }
 
@@ -302,7 +326,6 @@ async function loadDailyActivity() {
 function renderCalendar() {
     const container = document.getElementById('calendar-grid');
     const monthYear = document.getElementById('current-month-year');
-    const t = translations[currentLanguage];
     
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
@@ -310,16 +333,14 @@ function renderCalendar() {
     monthYear.innerText = new Intl.DateTimeFormat(currentLanguage === 'zh' ? 'zh-TW' : currentLanguage, { month: 'long', year: 'numeric' }).format(currentCalendarDate);
     
     container.innerHTML = '';
-    ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(d => {
-        container.innerHTML += `<div class="day-header">${d}</div>`;
+    ['S', 'M', 'T', 'W', 'T', 'F', 'S'].forEach(d => {
+        container.innerHTML += `<div style="font-weight:bold;color:var(--accent-red);font-size:0.75rem;padding:5px;">${d}</div>`;
     });
     
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     
-    for (let i = 0; i < firstDay; i++) {
-        container.innerHTML += `<div class="day-cell empty"></div>`;
-    }
+    for (let i = 0; i < firstDay; i++) container.innerHTML += `<div class="day-cell empty"></div>`;
     
     const today = new Date().toISOString().split('T')[0];
     
@@ -334,54 +355,18 @@ function renderCalendar() {
         `;
     }
     
-    document.getElementById('selected-date-label').innerText = selectedDate;
-    loadDailyRecords(selectedDate);
+    document.getElementById('selected-date-label').innerText = selectedDate + " 🥯";
 }
 
 function selectCalendarDate(date) {
     selectedDate = date;
     renderCalendar();
+    // Switch to Activities automatically when a date is selected for convenience
+    switchSubTab('act-view');
 }
 
-function prevMonth() {
-    currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
-    renderCalendar();
-}
-
-function nextMonth() {
-    currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
-    renderCalendar();
-}
-
-async function loadDailyRecords(date) {
-    const container = document.getElementById('calendar-records');
-    container.innerHTML = translations[currentLanguage].loading;
-    
-    try {
-        const res = await fetch(`/api/daily/${date}`);
-        const records = await res.json();
-        
-        if (records.length === 0) {
-            container.innerHTML = `<p>${translations[currentLanguage].select_date}</p>`;
-            return;
-        }
-        
-        container.innerHTML = records.map(r => `
-            <div class="record-item">
-                <div class="record-header">
-                    <span>${r.Type.toUpperCase()}</span>
-                    <span>${r.Time}</span>
-                </div>
-                <div class="record-details">
-                    ${r.Detail1} ${r.Detail2 ? '| ' + r.Detail2 : ''}
-                    ${r.Remarks ? '<br><i>' + r.Remarks + '</i>' : ''}
-                </div>
-            </div>
-        `).join('');
-    } catch (e) {
-        container.innerHTML = 'Error loading records.';
-    }
-}
+function prevMonth() { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); }
+function nextMonth() { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); }
 
 // ── Growth & Charts ──────────────────────────────────────────────────────────
 
@@ -390,11 +375,9 @@ async function loadGrowthHistory() {
     const history = await res.json();
     const container = document.getElementById('growth-history');
     container.innerHTML = history.reverse().map(h => `
-        <div class="record-item">
-            <div class="record-header">${h.Date}</div>
-            <div class="record-details">
-                W: ${h['Weight (kg)']}kg | H: ${h['Height (cm)']}cm | Head: ${h['Head (cm)']}cm
-            </div>
+        <div class="timeline-item">
+            <span class="timeline-time">${h.Date}</span>
+            <span>W: ${h['Weight (kg)']}kg | H: ${h['Height (cm)']}cm | Head: ${h['Head (cm)']}cm</span>
         </div>
     `).join('');
     updateCharts(history.reverse());
@@ -407,8 +390,8 @@ function initCharts() {
 
     const config = (label, color) => ({
         type: 'line',
-        data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, fill: false, tension: 0.4 }] },
-        options: { responsive: true, plugins: { legend: { display: false } } }
+        data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '22', fill: true, tension: 0.4, pointRadius: 5 }] },
+        options: { responsive: true, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: false } } }
     });
 
     if (charts.weight) charts.weight.destroy();
@@ -423,18 +406,9 @@ function initCharts() {
 function updateCharts(data) {
     if (!data || !charts.weight) return;
     const labels = data.map(h => h.Date);
-    
-    charts.weight.data.labels = labels;
-    charts.weight.data.datasets[0].data = data.map(h => h['Weight (kg)']);
-    charts.weight.update();
-
-    charts.height.data.labels = labels;
-    charts.height.data.datasets[0].data = data.map(h => h['Height (cm)']);
-    charts.height.update();
-
-    charts.head.data.labels = labels;
-    charts.head.data.datasets[0].data = data.map(h => h['Head (cm)']);
-    charts.head.update();
+    charts.weight.data.labels = labels; charts.weight.data.datasets[0].data = data.map(h => h['Weight (kg)']); charts.weight.update();
+    charts.height.data.labels = labels; charts.height.data.datasets[0].data = data.map(h => h['Height (cm)']); charts.height.update();
+    charts.head.data.labels = labels; charts.head.data.datasets[0].data = data.map(h => h['Head (cm)']); charts.head.update();
 }
 
 async function saveGrowth() {
@@ -450,48 +424,7 @@ async function saveGrowth() {
     tg.showAlert(translations[currentLanguage].success);
 }
 
-// ── Tasks ───────────────────────────────────────────────────────────────────
-
-async function loadTasks() {
-    const res = await fetch('/api/tasks');
-    const tasks = await res.json();
-    const container = document.getElementById('task-list');
-    container.innerHTML = tasks.map(t => `
-        <li class="task-item">
-            <input type="checkbox" ${t.Status === 'Done' ? 'checked' : ''} onchange="toggleTask('${t.Task}', this.checked)">
-            <span>${t.Task}</span>
-        </li>
-    `).join('');
-}
-
-async function toggleTask(name, checked) {
-    await fetch('/api/tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: name, status: checked ? 'Done' : 'Pending'}) });
-    tg.HapticFeedback.impactOccurred('light');
-}
-
-function showAddTask() {
-    const modal = document.getElementById('form-modal');
-    const body = document.getElementById('modal-body');
-    const t = translations[currentLanguage];
-    
-    body.innerHTML = `
-        <h2>${t.add_task}</h2>
-        <div class="form-group"><label>${t.task_name}</label><input type="text" id="new-task-name"></div>
-        <button class="btn-save" onclick="addNewTask()">${t.save}</button>
-    `;
-    modal.style.display = 'block';
-}
-
-async function addNewTask() {
-    const name = document.getElementById('new-task-name').value;
-    if (!name) return;
-    await fetch('/api/tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({name: name, status: 'Pending'}) });
-    closeForm();
-    loadTasks();
-}
-
 // ── Init ────────────────────────────────────────────────────────────────────
 setLanguage('en');
-loadTasks();
-loadDailyActivity();
+loadLatestLogs();
 renderCalendar();
