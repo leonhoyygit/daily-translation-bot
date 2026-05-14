@@ -24,6 +24,7 @@ const translations = {
         height: "Height (cm)",
         head: "Head Circ. (cm)",
         save: "Save",
+        days_activity: "Today's Activities",
         time: "Time",
         start_time: "Start Time",
         end_time: "End Time",
@@ -67,6 +68,7 @@ const translations = {
         height: "Tinggi (cm)",
         head: "Lingkar Kepala (cm)",
         save: "Simpan",
+        days_activity: "Aktivitas Hari Ini",
         time: "Waktu",
         start_time: "Waktu Mulai",
         end_time: "Waktu Selesai",
@@ -110,6 +112,7 @@ const translations = {
         height: "身高 (cm)",
         head: "頭圍 (cm)",
         save: "保存",
+        days_activity: "今日記錄回顧",
         time: "時間",
         start_time: "開始時間",
         end_time: "結束時間",
@@ -254,9 +257,43 @@ async function saveDaily(type) {
             tg.HapticFeedback.notificationOccurred('success');
             closeForm();
             tg.showAlert(translations[currentLanguage].success);
+            loadDailyActivity(); // Refresh feed after save
         }
     } catch (e) {
         tg.showAlert(translations[currentLanguage].error);
+    }
+}
+
+async function loadDailyActivity() {
+    const today = new Date().toISOString().split('T')[0];
+    const container = document.getElementById('daily-activity-list');
+    
+    try {
+        const res = await fetch(`/api/daily/${today}`);
+        const records = await res.json();
+        
+        if (records.length === 0) {
+            container.innerHTML = `<p style="text-align:center;color:#bbb;margin-top:20px;">No activities yet today.</p>`;
+            return;
+        }
+        
+        // Sort by time descending
+        records.sort((a, b) => b.Time.localeCompare(a.Time));
+
+        container.innerHTML = records.map(r => `
+            <div class="record-item">
+                <div class="record-header">
+                    <span>${r.Type.toUpperCase()}</span>
+                    <span>${r.Time}</span>
+                </div>
+                <div class="record-details">
+                    ${r.Detail1} ${r.Detail2 ? '| ' + r.Detail2 : ''}
+                    ${r.Remarks ? '<br><i>' + r.Remarks + '</i>' : ''}
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error("Error loading daily activity:", e);
     }
 }
 
@@ -456,4 +493,5 @@ async function addNewTask() {
 // ── Init ────────────────────────────────────────────────────────────────────
 setLanguage('en');
 loadTasks();
+loadDailyActivity();
 renderCalendar();

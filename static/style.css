@@ -183,6 +183,18 @@ main {
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
 }
 
+/* Activity Feed */
+.activity-feed-section {
+    margin-top: 30px;
+}
+
+.activity-feed-section h3 {
+    font-size: 1.2rem;
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    padding-left: 5px;
+}
+
 /* Tab 2: Calendar */
 #calendar-grid {
     display: grid;
