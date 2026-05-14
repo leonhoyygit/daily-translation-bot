@@ -169,8 +169,10 @@ function openForm(type) {
         html += `
             <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
             <div class="form-group"><label>${t.source}</label><select id="f-detail1">
-                <option value="Breast (L)">${t.breast_l}</option><option value="Breast (R)">${t.breast_r}</option>
-                <option value="Formula">${t.formula}</option><option value="Water">${t.water}</option>
+                <option value="Formula" selected>${t.formula}</option>
+                <option value="Breast (L)">${t.breast_l}</option>
+                <option value="Breast (R)">${t.breast_r}</option>
+                <option value="Water">${t.water}</option>
             </select></div>
             <div class="form-group"><label>${t.amount}</label><input type="number" id="f-detail2"></div>
         `;
