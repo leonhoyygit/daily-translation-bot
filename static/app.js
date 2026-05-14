@@ -267,14 +267,15 @@ async function loadTimeline(date) {
     container.innerHTML = `<p style="text-align:center;padding:20px;color:#ccc;">${translations[currentLanguage].loading}</p>`;
     
     const translateValue = (val) => {
-        if (!val) return "";
+        if (val === undefined || val === null || val === "") return "";
+        const strVal = String(val);
         const map = {
             "feeding": "feeding", "diaper": "diaper", "sleep": "sleep", "food": "food", "care": "care",
             "Breast (L)": "breast_l", "Breast (R)": "breast_r", "Formula": "formula", "Water": "water",
             "Pee": "pee", "Poop": "poop", "Both": "both"
         };
-        const key = map[val] || map[val.toLowerCase()];
-        return key ? (translations[currentLanguage][key] || val) : val;
+        const key = map[strVal] || map[strVal.toLowerCase()];
+        return key ? (translations[currentLanguage][key] || strVal) : strVal;
     };
 
     try {
