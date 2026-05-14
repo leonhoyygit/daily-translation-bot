@@ -202,18 +202,50 @@ function openForm(type) {
 function closeForm() { document.getElementById('form-modal').classList.remove('active'); }
 
 async function saveDaily(type) {
+    const btn = document.querySelector('.modal-sheet .btn-primary-pill');
+    const originalText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = translations[currentLanguage].loading;
+
+    // Use local date instead of UTC to avoid "day-ahead" issues
+    const localDate = new Date();
+    const dateStr = localDate.getFullYear() + '-' + 
+                    (localDate.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                    localDate.getDate().toString().padStart(2, '0');
+
     const data = {
         type: type,
         time: document.getElementById('f-time')?.value || document.getElementById('f-start')?.value,
         detail1: document.getElementById('f-detail1')?.value || "",
         detail2: document.getElementById('f-detail2')?.value || document.getElementById('f-end')?.value || "",
         remarks: document.getElementById('f-remarks')?.value || "",
-        date: new Date().toISOString().split('T')[0]
+        date: dateStr
     };
+
     try {
-        const res = await fetch('/api/daily', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-        if (res.ok) { tg.HapticFeedback.notificationOccurred('success'); closeForm(); tg.showAlert(translations[currentLanguage].success); }
-    } catch (e) { tg.showAlert(translations[currentLanguage].error); }
+        const res = await fetch('/api/daily', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(data) 
+        });
+        
+        if (res.ok) { 
+            tg.HapticFeedback.notificationOccurred('success'); 
+            closeForm(); 
+            tg.showAlert(translations[currentLanguage].success);
+            // Update the selected date to today if they just logged something for today
+            selectedDate = dateStr;
+            // Immediate refresh of timeline if we are on the activities tab
+            loadTimeline(dateStr);
+        } else {
+            throw new Error('Save failed');
+        }
+    } catch (e) { 
+        tg.showAlert(translations[currentLanguage].error); 
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
 }
 
 // ── Timeline Logic ──────────────────────────────────────────────────────────
@@ -241,21 +273,40 @@ async function loadTimeline(date) {
 
 // ── Calendar Logic ──────────────────────────────────────────────────────────
 
-function renderCalendar() {
+async function renderCalendar() {
     const container = document.getElementById('calendar-grid');
     const monthYear = document.getElementById('current-month-year');
     const year = currentCalendarDate.getFullYear();
     const month = currentCalendarDate.getMonth();
+    
     monthYear.innerText = new Intl.DateTimeFormat(currentLanguage === 'zh' ? 'zh-TW' : currentLanguage, { month: 'short', year: 'numeric' }).format(currentCalendarDate);
     container.innerHTML = '';
+    
     ['S','M','T','W','T','F','S'].forEach(d => container.innerHTML += `<div style="font-size:0.7rem;font-weight:700;color:#ddd;text-align:center;">${d}</div>`);
+    
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
+    
+    // Fetch dates with activities to show dots
+    let activityDates = [];
+    try {
+        const res = await fetch('/api/activity-dates');
+        if (res.ok) activityDates = await res.json();
+    } catch(e) {}
+
     for (let i = 0; i < firstDay; i++) container.innerHTML += `<div></div>`;
+    
     for (let d = 1; d <= daysInMonth; d++) {
         const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
         const isSelected = dateStr === selectedDate;
-        container.innerHTML += `<div class="day-cell ${isSelected ? 'selected' : ''}" onclick="selectDate('${dateStr}')">${d}</div>`;
+        const hasActivity = activityDates.includes(dateStr);
+        
+        container.innerHTML += `
+            <div class="day-cell ${isSelected ? 'selected' : ''} ${hasActivity ? 'has-activity' : ''}" onclick="selectDate('${dateStr}')">
+                ${d}
+                ${hasActivity && !isSelected ? '<span class="dot"></span>' : ''}
+            </div>
+        `;
     }
 }
 
@@ -290,10 +341,47 @@ function updateCharts(data) {
 }
 
 async function saveGrowth() {
-    const data = { weight: document.getElementById('growth-weight').value, height: document.getElementById('growth-height').value, head: document.getElementById('growth-head').value, date: new Date().toISOString().split('T')[0] };
-    if (!data.weight || !data.height) return;
-    await fetch('/api/growth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data) });
-    loadGrowthHistory(); tg.showAlert(translations[currentLanguage].success);
+    const btn = document.querySelector('#tab-growth .btn-primary-pill');
+    const originalText = btn.innerText;
+    
+    const localDate = new Date();
+    const dateStr = localDate.getFullYear() + '-' + 
+                    (localDate.getMonth() + 1).toString().padStart(2, '0') + '-' + 
+                    localDate.getDate().toString().padStart(2, '0');
+
+    const data = { 
+        weight: document.getElementById('growth-weight').value, 
+        height: document.getElementById('growth-height').value, 
+        head: document.getElementById('growth-head').value, 
+        date: dateStr 
+    };
+    
+    if (!data.weight || !data.height) {
+        tg.showAlert("Please enter weight and height");
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerText = translations[currentLanguage].loading;
+
+    try {
+        const res = await fetch('/api/growth', { 
+            method: 'POST', 
+            headers: {'Content-Type': 'application/json'}, 
+            body: JSON.stringify(data) 
+        });
+        if (res.ok) {
+            loadGrowthHistory(); 
+            tg.showAlert(translations[currentLanguage].success);
+        } else {
+            throw new Error('Growth save failed');
+        }
+    } catch (e) {
+        tg.showAlert(translations[currentLanguage].error);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalText;
+    }
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────

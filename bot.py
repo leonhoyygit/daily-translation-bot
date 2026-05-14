@@ -163,6 +163,12 @@ async def get_daily(date_str: str):
     records = sheets_db.get_daily_records(date_str)
     return records
 
+@app.get("/api/activity-dates")
+async def get_activity_dates():
+    records = sheets_db.get_all_daily_records()
+    dates = sorted(list(set(str(r.get("Date")) for r in records if r.get("Date"))))
+    return dates
+
 @app.post("/api/growth")
 async def add_growth(record: dict):
     success = sheets_db.log_growth_metric(

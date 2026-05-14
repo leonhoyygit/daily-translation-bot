@@ -338,3 +338,18 @@ main {
     color: white;
     font-weight: 700;
 }
+
+.day-cell {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.dot {
+    width: 4px;
+    height: 4px;
+    background: var(--anpan-red);
+    border-radius: 50%;
+    position: absolute;
+    bottom: 6px;
+}

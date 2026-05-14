@@ -88,7 +88,14 @@ def get_daily_records(date_str):
     if sh:
         sheet = sh.worksheet("Daily_Records")
         all_records = sheet.get_all_records()
-        return [r for r in all_records if r["Date"] == date_str]
+        return [r for r in all_records if str(r.get("Date")) == date_str]
+    return []
+
+def get_all_daily_records():
+    sh = get_or_create_spreadsheet()
+    if sh:
+        sheet = sh.worksheet("Daily_Records")
+        return sheet.get_all_records()
     return []
 
 def log_growth_metric(weight, height, head, date_str=None):
