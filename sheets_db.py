@@ -85,6 +85,7 @@ def get_or_create_spreadsheet():
         ensure_worksheet(sh, "Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
         ensure_worksheet(sh, "Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
         tasks_sheet = ensure_worksheet(sh, "Daily_Tasks", ["Task", "Status", "LastUpdated"])
+        ensure_worksheet(sh, "Meal_Plans", ["Date", "MealPlan", "LastUpdated"])
         
         # Add default tasks if Daily_Tasks was just created or is empty (only has headers)
         if len(tasks_sheet.get_all_values()) <= 1:
@@ -97,6 +98,32 @@ def get_or_create_spreadsheet():
             tasks_sheet.append_rows(default_tasks)
 
     return sh
+
+def log_meal_plan(date_str, meal_plan):
+    from datetime import datetime
+    sh = get_or_create_spreadsheet()
+    if sh:
+        sheet = sh.worksheet("Meal_Plans")
+        cells = sheet.findall(date_str)
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if cells:
+            row = cells[0].row
+            sheet.update_cell(row, 2, meal_plan)
+            sheet.update_cell(row, 3, now_str)
+        else:
+            sheet.append_row([date_str, meal_plan, now_str])
+        return True
+    return False
+
+def get_meal_plan(date_str):
+    sh = get_or_create_spreadsheet()
+    if sh:
+        sheet = sh.worksheet("Meal_Plans")
+        records = sheet.get_all_records()
+        for r in records:
+            if str(r.get("Date")) == date_str:
+                return r.get("MealPlan", "")
+    return ""
 
 def log_daily_record(record_type, time, detail1="", detail2="", detail3="", remarks="", date_str=None):
     from datetime import datetime

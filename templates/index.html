@@ -31,6 +31,36 @@
         <main id="main-content">
             <!-- Tab 1: Daily (Strict Isolation) -->
             <section id="tab-daily" class="tab-content active">
+                <!-- Daily Overview Card -->
+                <div class="daily-overview-card" id="birthday-card">
+                    <div class="overview-header">
+                        <div class="date-info">
+                            <span id="display-date">May 15, 2026</span>
+                            <h2 data-i18n="daily_overview">Daily Overview</h2>
+                        </div>
+                        <div id="birthday-badge" class="birthday-badge" style="display: none;">
+                            <span class="icon">🎂</span>
+                            <span data-i18n="birthday">Happy Birthday Andrea!</span>
+                        </div>
+                    </div>
+                    <div class="overview-grid">
+                        <div class="overview-item" onclick="openMealPlan()">
+                            <div class="item-icon meal-bg">🍱</div>
+                            <div class="item-content">
+                                <label data-i18n="meal_plan">Meal Plan</label>
+                                <span id="meal-preview" data-i18n="update_now">Update now</span>
+                            </div>
+                        </div>
+                        <div class="overview-item" onclick="openTaskList()">
+                            <div class="item-icon task-bg">✅</div>
+                            <div class="item-content">
+                                <label data-i18n="task_list">Task List</label>
+                                <span id="task-preview" data-i18n="check_goals">Check goals</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="input-grid-premium">
                     <div class="action-card" onclick="openForm('sleep')">
                         <div class="card-icon sleep-bg">😴</div>

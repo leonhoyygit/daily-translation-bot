@@ -44,7 +44,15 @@ const translations = {
         water: "Water",
         pee: "Pee",
         poop: "Poop",
-        both: "Both"
+        both: "Both",
+        daily_overview: "Daily Overview",
+        meal_plan: "Meal Plan",
+        task_list: "Task List",
+        update_now: "Update now",
+        check_goals: "Check goals",
+        birthday: "Happy Birthday Andrea!",
+        save_plan: "Save Plan",
+        tasks: "Tasks"
     },
     id: {
         baby_quote: "Tumbuh dengan cinta ❤️",
@@ -83,7 +91,15 @@ const translations = {
         water: "Air",
         pee: "Pipis",
         poop: "Pup",
-        both: "Keduanya"
+        both: "Keduanya",
+        daily_overview: "Ringkasan Harian",
+        meal_plan: "Menu Makan",
+        task_list: "Daftar Tugas",
+        update_now: "Perbarui",
+        check_goals: "Cek target",
+        birthday: "Selamat Ulang Tahun Andrea!",
+        save_plan: "Simpan Menu",
+        tasks: "Tugas"
     },
     zh: {
         baby_quote: "在愛中茁壯成長 ❤️",
@@ -122,9 +138,145 @@ const translations = {
         water: "飲水",
         pee: "小便",
         poop: "大便",
-        both: "大小便"
+        both: "大小便",
+        daily_overview: "每日概覽",
+        meal_plan: "今日食譜",
+        task_list: "任務清單",
+        update_now: "立即更新",
+        check_goals: "查看目標",
+        birthday: "祝 Andrea 生日快樂！",
+        save_plan: "儲存食譜",
+        tasks: "任務"
     }
 };
+
+function checkBirthday() {
+    const today = new Date();
+    const isMay16 = (today.getMonth() === 4 && today.getDate() === 16);
+    if (isMay16) {
+        document.body.classList.add('birthday-mode');
+        document.getElementById('birthday-badge').style.display = 'flex';
+        document.getElementById('baby-quote').textContent = translations[currentLanguage].birthday + " 🎂🎉";
+    }
+}
+
+function updateOverviewDate() {
+    const today = new Date();
+    const options = { month: 'long', day: 'numeric', year: 'numeric' };
+    document.getElementById('display-date').innerText = today.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', options);
+}
+
+async function refreshOverviewPreviews() {
+    const date = new Date().toISOString().split('T')[0];
+    try {
+        const mealRes = await fetch(`/api/meal-plan/${date}`);
+        const mealData = await mealRes.json();
+        if (mealData.meal_plan) {
+            document.getElementById('meal-preview').innerText = mealData.meal_plan;
+        }
+
+        const taskRes = await fetch('/api/tasks');
+        const tasks = await taskRes.json();
+        const pending = tasks.filter(t => t.Status === 'Pending').length;
+        document.getElementById('task-preview').innerText = pending > 0 ? `${pending} tasks left` : "All done! ✨";
+    } catch (e) {
+        console.error("Error refreshing previews", e);
+    }
+}
+
+async function openMealPlan() {
+    const overlay = document.getElementById('form-modal');
+    const body = document.getElementById('modal-body');
+    const t = translations[currentLanguage];
+    
+    body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.meal_plan}</h2>
+        <div class="form-group">
+            <label>${t.calendar}</label>
+            <input type="date" id="meal-date" value="${new Date().toISOString().split('T')[0]}">
+        </div>
+        <div class="form-group">
+            <label>${t.description}</label>
+            <textarea id="meal-content" rows="4" placeholder="Enter today's menu..."></textarea>
+        </div>
+        <button class="btn-primary-pill" onclick="saveMealPlan()">${t.save_plan}</button>`;
+    
+    overlay.classList.add('active');
+    
+    // Pre-fill existing
+    const date = document.getElementById('meal-date').value;
+    const res = await fetch(`/api/meal-plan/${date}`);
+    const data = await res.json();
+    if (data.meal_plan) document.getElementById('meal-content').value = data.meal_plan;
+}
+
+async function saveMealPlan() {
+    const btn = document.querySelector('.modal-sheet .btn-primary-pill');
+    const date = document.getElementById('meal-date').value;
+    const plan = document.getElementById('meal-content').value;
+    
+    btn.disabled = true;
+    btn.innerText = translations[currentLanguage].loading;
+    
+    try {
+        await fetch('/api/meal-plan', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ date, meal_plan: plan })
+        });
+        tg.HapticFeedback.notificationOccurred('success');
+        closeForm();
+        refreshOverviewPreviews();
+    } catch (e) {
+        tg.showAlert(translations[currentLanguage].error);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = translations[currentLanguage].save_plan;
+    }
+}
+
+async function openTaskList() {
+    const overlay = document.getElementById('form-modal');
+    const body = document.getElementById('modal-body');
+    const t = translations[currentLanguage];
+    
+    body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.task_list}</h2>
+        <div id="tasks-container" style="margin-bottom:20px;">${t.loading}</div>`;
+    
+    overlay.classList.add('active');
+    
+    const res = await fetch('/api/tasks');
+    const tasks = await res.json();
+    
+    let html = '';
+    tasks.forEach(task => {
+        const isDone = task.Status === 'Done';
+        html += `
+            <div class="overview-item" style="margin-bottom:8px; justify-content:space-between;" onclick="toggleTask('${task.Task}', '${isDone ? 'Pending' : 'Done'}')">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="item-icon ${isDone ? 'feeding-bg' : 'task-bg'}">${isDone ? '✅' : '⭕'}</div>
+                    <span style="${isDone ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;'}">${task.Task}</span>
+                </div>
+            </div>
+        `;
+    });
+    document.getElementById('tasks-container').innerHTML = html;
+}
+
+async function toggleTask(name, newStatus) {
+    try {
+        await fetch('/api/tasks', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ name: name, status: newStatus })
+        });
+        tg.HapticFeedback.impactOccurred('light');
+        openTaskList(); // Refresh list
+        refreshOverviewPreviews();
+    } catch (e) {
+        tg.showAlert(translations[currentLanguage].error);
+    }
+}
+
 
 function setLanguage(lang) {
     currentLanguage = lang;
@@ -133,6 +285,9 @@ function setLanguage(lang) {
         if (translations[lang][key]) el.textContent = translations[lang][key];
     });
     document.querySelectorAll('.lang-pill button').forEach(btn => btn.classList.toggle('active', btn.id === `btn-${lang}`));
+    
+    updateOverviewDate();
+    checkBirthday();
     
     // Refresh timeline if active to translate dynamic content
     if (document.getElementById('tab-activities').classList.contains('active')) {
@@ -430,3 +585,4 @@ async function saveGrowth() {
 setLanguage('en');
 switchTab('daily');
 document.getElementById('growth-date').value = selectedDate;
+refreshOverviewPreviews();

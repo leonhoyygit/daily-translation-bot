@@ -216,6 +216,17 @@ async def update_task(task: dict):
         raise HTTPException(status_code=500, detail="Failed to update task")
     return {"status": "success"}
 
+@app.get("/api/meal-plan/{date_str}")
+async def get_meal_plan(date_str: str):
+    return {"meal_plan": sheets_db.get_meal_plan(date_str)}
+
+@app.post("/api/meal-plan")
+async def save_meal_plan(data: dict):
+    success = sheets_db.log_meal_plan(data.get("date"), data.get("meal_plan"))
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to save meal plan")
+    return {"status": "success"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
