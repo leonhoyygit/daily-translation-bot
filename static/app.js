@@ -52,7 +52,13 @@ const translations = {
         check_goals: "Check goals",
         birthday: "Happy Birthday Andrea!",
         save_plan: "Save Plan",
-        tasks: "Tasks"
+        tasks: "Tasks",
+        daily_goals: "Daily Goals",
+        breakfast: "Breakfast",
+        lunch: "Lunch",
+        dinner: "Dinner",
+        meal_type: "Meal Type",
+        dish_name: "Dish Name"
     },
     id: {
         baby_quote: "Tumbuh dengan cinta ❤️",
@@ -99,7 +105,13 @@ const translations = {
         check_goals: "Cek target",
         birthday: "Selamat Ulang Tahun Andrea!",
         save_plan: "Simpan Menu",
-        tasks: "Tugas"
+        tasks: "Tugas",
+        daily_goals: "Target Harian",
+        breakfast: "Sarapan",
+        lunch: "Makan Siang",
+        dinner: "Makan Malam",
+        meal_type: "Tipe Makan",
+        dish_name: "Nama Masakan"
     },
     zh: {
         baby_quote: "在愛中茁壯成長 ❤️",
@@ -146,7 +158,13 @@ const translations = {
         check_goals: "查看目標",
         birthday: "祝 Andrea 生日快樂！",
         save_plan: "儲存食譜",
-        tasks: "任務"
+        tasks: "任務",
+        daily_goals: "今日目標",
+        breakfast: "早餐",
+        lunch: "午餐",
+        dinner: "晚餐",
+        meal_type: "餐點類型",
+        dish_name: "菜名"
     }
 };
 
@@ -173,12 +191,18 @@ async function refreshOverviewPreviews() {
         const mealData = await mealRes.json();
         if (mealData.meal_plan) {
             document.getElementById('meal-preview').innerText = mealData.meal_plan;
+        } else {
+            document.getElementById('meal-preview').innerText = translations[currentLanguage].update_now;
         }
 
         const taskRes = await fetch('/api/tasks');
         const tasks = await taskRes.json();
-        const pending = tasks.filter(t => t.Status === 'Pending').length;
-        document.getElementById('task-preview').innerText = pending > 0 ? `${pending} tasks left` : "All done! ✨";
+        const total = tasks.length;
+        const done = tasks.filter(t => t.Status === 'Done').length;
+        const percentage = total > 0 ? (done / total) * 100 : 0;
+        
+        document.getElementById('task-progress').style.width = `${percentage}%`;
+        document.getElementById('task-preview').innerText = `${done}/${total} completed`;
     } catch (e) {
         console.error("Error refreshing previews", e);
     }
@@ -195,8 +219,16 @@ async function openMealPlan() {
             <input type="date" id="meal-date" value="${new Date().toISOString().split('T')[0]}">
         </div>
         <div class="form-group">
-            <label>${t.description}</label>
-            <textarea id="meal-content" rows="4" placeholder="Enter today's menu..."></textarea>
+            <label>${t.meal_type}</label>
+            <select id="meal-type">
+                <option value="Breakfast">${t.breakfast}</option>
+                <option value="Lunch">${t.lunch}</option>
+                <option value="Dinner">${t.dinner}</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>${t.dish_name}</label>
+            <textarea id="meal-content" rows="3" placeholder="e.g. Avocado Toast..."></textarea>
         </div>
         <button class="btn-primary-pill" onclick="saveMealPlan()">${t.save_plan}</button>`;
     
@@ -206,13 +238,24 @@ async function openMealPlan() {
     const date = document.getElementById('meal-date').value;
     const res = await fetch(`/api/meal-plan/${date}`);
     const data = await res.json();
-    if (data.meal_plan) document.getElementById('meal-content').value = data.meal_plan;
+    if (data.meal_plan) {
+        // Simple heuristic to separate type and dish if stored together
+        const parts = data.meal_plan.split(': ');
+        if (parts.length > 1) {
+            document.getElementById('meal-type').value = parts[0];
+            document.getElementById('meal-content').value = parts[1];
+        } else {
+            document.getElementById('meal-content').value = data.meal_plan;
+        }
+    }
 }
 
 async function saveMealPlan() {
     const btn = document.querySelector('.modal-sheet .btn-primary-pill');
     const date = document.getElementById('meal-date').value;
-    const plan = document.getElementById('meal-content').value;
+    const type = document.getElementById('meal-type').value;
+    const dish = document.getElementById('meal-content').value;
+    const fullPlan = `${type}: ${dish}`;
     
     btn.disabled = true;
     btn.innerText = translations[currentLanguage].loading;
@@ -221,7 +264,7 @@ async function saveMealPlan() {
         await fetch('/api/meal-plan', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ date, meal_plan: plan })
+            body: JSON.stringify({ date, meal_plan: fullPlan })
         });
         tg.HapticFeedback.notificationOccurred('success');
         closeForm();

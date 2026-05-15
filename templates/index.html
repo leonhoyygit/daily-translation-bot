@@ -31,33 +31,43 @@
         <main id="main-content">
             <!-- Tab 1: Daily (Strict Isolation) -->
             <section id="tab-daily" class="tab-content active">
-                <!-- Daily Overview Card -->
-                <div class="daily-overview-card" id="birthday-card">
-                    <div class="overview-header">
-                        <div class="date-info">
-                            <span id="display-date">May 15, 2026</span>
-                            <h2 data-i18n="daily_overview">Daily Overview</h2>
-                        </div>
-                        <div id="birthday-badge" class="birthday-badge" style="display: none;">
-                            <span class="icon">🎂</span>
-                            <span data-i18n="birthday">Happy Birthday Andrea!</span>
-                        </div>
+                <!-- Redesigned Daily Overview: Wide Banners -->
+                <div class="overview-banners" id="daily-banners">
+                    <div class="date-header-mini">
+                        <span id="display-date">May 15, 2026</span>
                     </div>
-                    <div class="overview-grid">
-                        <div class="overview-item" onclick="openMealPlan()">
-                            <div class="item-icon meal-bg">🍱</div>
-                            <div class="item-content">
+
+                    <!-- Meal Plan Wide Card -->
+                    <div class="banner-card meal-banner" onclick="openMealPlan()">
+                        <div class="banner-content">
+                            <div class="banner-icon">🍱</div>
+                            <div class="banner-text">
                                 <label data-i18n="meal_plan">Meal Plan</label>
-                                <span id="meal-preview" data-i18n="update_now">Update now</span>
+                                <span id="meal-preview" data-i18n="update_now">Update today's menu</span>
                             </div>
                         </div>
-                        <div class="overview-item" onclick="openTaskList()">
-                            <div class="item-icon task-bg">✅</div>
-                            <div class="item-content">
-                                <label data-i18n="task_list">Task List</label>
-                                <span id="task-preview" data-i18n="check_goals">Check goals</span>
+                        <button class="edit-btn">✏️</button>
+                    </div>
+
+                    <!-- Daily Goals Wide Card -->
+                    <div class="banner-card task-banner" onclick="openTaskList()">
+                        <div class="banner-content">
+                            <div class="banner-icon">🎯</div>
+                            <div class="banner-text">
+                                <label data-i18n="daily_goals">Daily Goals</label>
+                                <div class="progress-container">
+                                    <div class="progress-bar" id="task-progress" style="width: 0%"></div>
+                                </div>
+                                <span id="task-preview" class="progress-text">0/0 completed</span>
                             </div>
                         </div>
+                        <button class="edit-btn">✏️</button>
+                    </div>
+
+                    <!-- Birthday Badge (Optional) -->
+                    <div id="birthday-badge" class="birthday-badge banner-badge" style="display: none;">
+                        <span class="icon">🎂</span>
+                        <span data-i18n="birthday">Happy Birthday Andrea!</span>
                     </div>
                 </div>
 
