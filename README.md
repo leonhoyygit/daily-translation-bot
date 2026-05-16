@@ -11,6 +11,12 @@ A specialized Telegram bot designed for seamless tri-lingual communication. It a
 - **Reply Context:** Replies directly to the original message to maintain conversation flow.
 - **Quota Tracking:** Monitors character usage against Google's free tier (500,000 chars/month).
 - **Usage Command:** `/quota` to check real-time monthly character consumption.
+- **👶 Baby Tracker Mini-App:**
+  - **Daily Overview:** Premium banners for today's Meal Plan and Goal progress.
+  - **Smart Logging:** Quick-log buttons for Sleep, Feeding, Diapers, and Care.
+  - **Growth Metrics:** Interactive charts for Weight, Height, and Head Circumference.
+  - **Google Sheets Sync:** Automatic backup of all data to a shared spreadsheet.
+  - **Birthday Celebration:** A special "Birthday Mode" triggers every May 16 for Andrea!
 
 ## 🛠️ Tech Stack
 - **Framework:** `python-telegram-bot` (v22+)

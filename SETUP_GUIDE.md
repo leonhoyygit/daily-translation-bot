@@ -16,6 +16,9 @@
 4.  Go to **IAM & Admin > Service Accounts**.
 5.  Create a Service Account, then go to the **Keys** tab and **Add Key > Create new key (JSON)**.
 6.  Download the JSON file and rename it to `google_creds.json`. Place it in the `GeminiProject/Translation_Bot/` folder.
+7.  **Google Sheets Sync:**
+    *   The bot automatically creates a spreadsheet named `Baby_Tracker_Data`.
+    *   To allow the bot to write data, you **must** share your spreadsheet with the service account email found in your `google_creds.json` (or use the `/setup` command in the bot to get the email).
 
 ## 3. Local Setup
 1.  Create a `.env` file in the `GeminiProject/Translation_Bot/` folder:

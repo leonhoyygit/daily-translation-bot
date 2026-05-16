@@ -17,9 +17,12 @@
 
 ## Key Features
 - **Group Support:** Bot replies directly to messages for context.
+- **Baby Tracker Mini-App:** Integrated Telegram WebApp for tracking Andrea's daily activities.
+  - **Daily Overview:** Wide banners for Meal Plan and Daily Goals (with progress bar).
+  - **Growth Tracking:** Weight, height, and head circumference with interactive charts.
+  - **Birthday Mode:** Festive UI automatically activates on Andrea's birthday (May 16).
+- **Google Sheets Integration:** Syncs all tracker data to `Baby_Tracker_Data` spreadsheet.
 - **Usage Tracking:** Monthly character log in `usage_data.json` (max 500k/month).
-- **Quota Command:** `/quota` for real-time usage check.
-- **Media Handling:** Automatically ignores photos and non-text media.
 
 ## Operational Notes
 - Git is initialized in the project folder.
