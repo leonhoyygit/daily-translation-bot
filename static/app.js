@@ -58,7 +58,8 @@ const translations = {
         lunch: "Lunch",
         dinner: "Dinner",
         meal_type: "Meal Type",
-        dish_name: "Dish Name"
+        dish_name: "Dish Name",
+        daily_menu: "Daily Menu"
     },
     id: {
         baby_quote: "Tumbuh dengan cinta ❤️",
@@ -111,7 +112,8 @@ const translations = {
         lunch: "Makan Siang",
         dinner: "Makan Malam",
         meal_type: "Tipe Makan",
-        dish_name: "Nama Masakan"
+        dish_name: "Nama Masakan",
+        daily_menu: "Menu Harian"
     },
     zh: {
         baby_quote: "在愛中茁壯成長 ❤️",
@@ -164,7 +166,8 @@ const translations = {
         lunch: "午餐",
         dinner: "晚餐",
         meal_type: "餐點類型",
-        dish_name: "菜名"
+        dish_name: "菜名",
+        daily_menu: "今日菜單"
     }
 };
 
@@ -189,11 +192,32 @@ async function refreshOverviewPreviews() {
     try {
         const mealRes = await fetch(`/api/meal-plan/${date}`);
         const mealData = await mealRes.json();
-        if (mealData.meal_plan) {
-            document.getElementById('meal-preview').innerText = mealData.meal_plan;
-        } else {
-            document.getElementById('meal-preview').innerText = translations[currentLanguage].update_now;
-        }
+        
+        const slots = ['breakfast', 'lunch', 'dinner'];
+        slots.forEach(slot => {
+            const el = document.getElementById(`${slot}-preview`);
+            if (el) {
+                try {
+                    const plan = mealData.meal_plan ? JSON.parse(mealData.meal_plan) : {};
+                    if (plan[slot]) {
+                        el.innerText = plan[slot];
+                        el.classList.remove('empty');
+                    } else {
+                        el.innerText = "--";
+                        el.classList.add('empty');
+                    }
+                } catch (e) {
+                    // Fallback for old plain text format
+                    if (slot === 'breakfast') {
+                        el.innerText = mealData.meal_plan || "--";
+                        el.classList.toggle('empty', !mealData.meal_plan);
+                    } else {
+                        el.innerText = "--";
+                        el.classList.add('empty');
+                    }
+                }
+            }
+        });
 
         const taskRes = await fetch('/api/tasks');
         const tasks = await taskRes.json();
@@ -208,7 +232,7 @@ async function refreshOverviewPreviews() {
     }
 }
 
-async function openMealPlan() {
+async function openMealPlan(initialType) {
     const overlay = document.getElementById('form-modal');
     const body = document.getElementById('modal-body');
     const t = translations[currentLanguage];
@@ -221,9 +245,9 @@ async function openMealPlan() {
         <div class="form-group">
             <label>${t.meal_type}</label>
             <select id="meal-type">
-                <option value="Breakfast">${t.breakfast}</option>
-                <option value="Lunch">${t.lunch}</option>
-                <option value="Dinner">${t.dinner}</option>
+                <option value="breakfast">${t.breakfast}</option>
+                <option value="lunch">${t.lunch}</option>
+                <option value="dinner">${t.dinner}</option>
             </select>
         </div>
         <div class="form-group">
@@ -232,22 +256,25 @@ async function openMealPlan() {
         </div>
         <button class="btn-primary-pill" onclick="saveMealPlan()">${t.save_plan}</button>`;
     
+    if (initialType) document.getElementById('meal-type').value = initialType.toLowerCase();
     overlay.classList.add('active');
     
-    // Pre-fill existing
-    const date = document.getElementById('meal-date').value;
-    const res = await fetch(`/api/meal-plan/${date}`);
-    const data = await res.json();
-    if (data.meal_plan) {
-        // Simple heuristic to separate type and dish if stored together
-        const parts = data.meal_plan.split(': ');
-        if (parts.length > 1) {
-            document.getElementById('meal-type').value = parts[0];
-            document.getElementById('meal-content').value = parts[1];
-        } else {
-            document.getElementById('meal-content').value = data.meal_plan;
+    const updateFields = async () => {
+        const date = document.getElementById('meal-date').value;
+        const res = await fetch(`/api/meal-plan/${date}`);
+        const data = await res.json();
+        const type = document.getElementById('meal-type').value;
+        try {
+            const plan = data.meal_plan ? JSON.parse(data.meal_plan) : {};
+            document.getElementById('meal-content').value = plan[type] || "";
+        } catch (e) {
+            document.getElementById('meal-content').value = (type === 'breakfast') ? data.meal_plan || "" : "";
         }
-    }
+    };
+
+    document.getElementById('meal-date').onchange = updateFields;
+    document.getElementById('meal-type').onchange = updateFields;
+    updateFields();
 }
 
 async function saveMealPlan() {
@@ -255,17 +282,44 @@ async function saveMealPlan() {
     const date = document.getElementById('meal-date').value;
     const type = document.getElementById('meal-type').value;
     const dish = document.getElementById('meal-content').value;
-    const fullPlan = `${type}: ${dish}`;
     
     btn.disabled = true;
     btn.innerText = translations[currentLanguage].loading;
     
     try {
+        // 1. Get current plan and update it
+        const res = await fetch(`/api/meal-plan/${date}`);
+        const data = await res.json();
+        let plan = {};
+        try {
+            plan = data.meal_plan ? JSON.parse(data.meal_plan) : {};
+        } catch (e) {
+            plan = { 'breakfast': data.meal_plan };
+        }
+        plan[type] = dish;
+
+        // 2. Save meal plan
         await fetch('/api/meal-plan', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ date, meal_plan: fullPlan })
+            body: JSON.stringify({ date, meal_plan: JSON.stringify(plan) })
         });
+
+        // 3. Inject into timeline with hardcoded times
+        const timeMap = { 'breakfast': '09:00', 'lunch': '12:00', 'dinner': '18:00' };
+        if (dish) {
+            await fetch('/api/daily', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    type: 'food',
+                    time: timeMap[type],
+                    detail1: `${type.charAt(0).toUpperCase() + type.slice(1)}: ${dish}`,
+                    date: date
+                })
+            });
+        }
+
         tg.HapticFeedback.notificationOccurred('success');
         closeForm();
         refreshOverviewPreviews();

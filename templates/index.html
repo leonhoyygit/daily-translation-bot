@@ -37,16 +37,29 @@
                         <span id="display-date">May 15, 2026</span>
                     </div>
 
-                    <!-- Meal Plan Wide Card -->
-                    <div class="banner-card meal-banner" onclick="openMealPlan()">
-                        <div class="banner-content">
-                            <div class="banner-icon">🍱</div>
-                            <div class="banner-text">
-                                <label data-i18n="meal_plan">Meal Plan</label>
-                                <span id="meal-preview" data-i18n="update_now">Update today's menu</span>
+                    <!-- Detailed Daily Menu Section -->
+                    <div class="menu-section-card">
+                        <div class="menu-header" onclick="openMealPlan()">
+                            <div class="menu-title-group">
+                                <div class="menu-icon-bg">🥗</div>
+                                <h2 data-i18n="daily_menu">Daily Menu</h2>
+                            </div>
+                            <button class="edit-btn-mini">✏️</button>
+                        </div>
+                        <div class="menu-grid-detailed">
+                            <div class="menu-slot" onclick="openMealPlan('Breakfast')">
+                                <label data-i18n="breakfast">Breakfast</label>
+                                <span id="breakfast-preview" class="empty">--</span>
+                            </div>
+                            <div class="menu-slot" onclick="openMealPlan('Lunch')">
+                                <label data-i18n="lunch">Lunch</label>
+                                <span id="lunch-preview" class="empty">--</span>
+                            </div>
+                            <div class="menu-slot" onclick="openMealPlan('Dinner')">
+                                <label data-i18n="dinner">Dinner</label>
+                                <span id="dinner-preview" class="empty">--</span>
                             </div>
                         </div>
-                        <button class="edit-btn">✏️</button>
                     </div>
 
                     <!-- Daily Goals Wide Card -->
