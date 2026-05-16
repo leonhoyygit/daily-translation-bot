@@ -5,9 +5,17 @@ try { tg.expand(); } catch(e) {}
 var currentLanguage = 'en';
 
 function getHKDate() {
-    // Create a Date object synchronized to Hong Kong Time
-    var hkStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Hong_Kong"});
-    return new Date(hkStr);
+    var now = new Date();
+    var formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Asia/Hong_Kong',
+        year: 'numeric', month: 'numeric', day: 'numeric',
+        hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
+    });
+    var parts = formatter.formatToParts(now);
+    var d = {};
+    parts.forEach(function(p) { if(p.type !== 'literal') d[p.type] = p.value; });
+    // Create a local date object with HK components to avoid any timezone/parsing ambiguity
+    return new Date(d.year, d.month - 1, d.day, d.hour, d.minute, d.second);
 }
 
 function getTodayISO() {
@@ -19,6 +27,7 @@ function getTodayISO() {
 }
 
 var selectedDate = getTodayISO();
+var viewDate = getHKDate();
 
 var translations = {
     en: {
@@ -89,7 +98,7 @@ function updateOverviewDate() {
 function refreshOverviewPreviews() {
     var date = getTodayISO();
     
-    // Meals sync
+    // Meals preview
     fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
         var plan = {};
         if (res.meal_plan) {
@@ -107,73 +116,104 @@ function refreshOverviewPreviews() {
         });
     });
 
-    // Goals Progress
+    // Goals Progress sync
     fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
-        if(!Array.isArray(tasks)) return;
-        var total = tasks.length;
-        var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
-        var pct = total > 0 ? (done / total) * 100 : 0;
         var bar = document.getElementById('task-progress');
         var text = document.getElementById('task-preview');
+        if (!Array.isArray(tasks) || tasks.length === 0) {
+            if (bar) bar.style.width = "0%";
+            if (text) text.innerText = "0/0 completed";
+            return;
+        }
+        var total = tasks.length;
+        var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
+        var pct = (done / total) * 100;
         if (bar) bar.style.width = pct + "%";
         if (text) text.innerText = done + "/" + total + " completed";
     });
 }
 
-// ── Modals & Interaction ──────────────────────────────────────────────────
+// ── Tasks & Daily Goals Logic ──────────────────────────────────────────────
 
 function openTasksInput() {
     var t = translations[currentLanguage] || translations['en'];
     var date = getTodayISO();
-    showModal('<h2 style="margin-bottom:20px;text-align:center;">' + t.set_goals + '</h2>' +
+    var h = '<h2 style="margin-bottom:20px;text-align:center;">' + t.set_goals + '</h2>' +
             '<div class="form-group"><label>Date</label><input type="date" id="tasks-date" value="' + date + '"></div>' +
-            '<div class="form-group"><label>Enter tasks (one per line)</label><textarea id="tasks-content" rows="8"></textarea></div>' +
-            '<button class="btn-primary-pill" id="btn-save-tasks" onclick="saveDailyTasks()">Save Tasks</button>' +
-            '<p style="margin-top:20px; text-align:center;"><button onclick="emergencyFix()" style="font-size:0.6rem; color:#ccc; background:none; border:1px solid #eee; padding:5px 10px; border-radius:10px;">Emergency Fix Database</button></p>');
+            '<div class="form-group"><label>' + t.enter_tasks + '</label><textarea id="tasks-content" rows="8" placeholder="Enter one task per line..."></textarea></div>' +
+            '<button class="btn-primary-pill" onclick="saveDailyTasks()">Save Tasks</button>';
+    showModal(h);
+    
+    // Fetch existing tasks to populate
     fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
         if (Array.isArray(tasks) && tasks.length > 0) {
+            var content = tasks.map(function(tk){ return tk.Task; }).join('\n');
             var el = document.getElementById('tasks-content');
-            if (el) el.value = tasks.map(function(tk){ return tk.Task; }).join('\n');
+            if (el) el.value = content;
         }
     });
 }
 
-function emergencyFix() {
-    if(!confirm("Reset database structure?")) return;
-    fetch('/api/force-fix-headers', {method:'POST'}).then(function(){ alert("Reset complete!"); closeForm(); refreshOverviewPreviews(); });
-}
-
 function saveDailyTasks() {
     var date = document.getElementById('tasks-date').value;
-    var list = document.getElementById('tasks-content').value.split('\n').filter(function(x){ return x.trim(); });
-    fetch('/api/set-tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ date: date, tasks: list }) }).then(function(r){
-        if (r.ok) { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} closeForm(); refreshOverviewPreviews(); }
+    var raw = document.getElementById('tasks-content').value;
+    var list = raw.split('\n').map(function(x){ return x.trim(); }).filter(function(x){ return x; });
+    
+    fetch('/api/set-tasks', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({ date: date, tasks: list }) 
+    }).then(function(r){
+        if (r.ok) {
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+            closeForm();
+            refreshOverviewPreviews();
+        } else {
+            alert("Failed to sync tasks. Please try again.");
+        }
     });
 }
 
 function openTaskList() {
     var t = translations[currentLanguage] || translations['en'];
     var date = getTodayISO();
-    showModal('<h2 style="margin-bottom:20px;text-align:center;">Daily Goals</h2><div id="tasks-container">' + t.loading + '</div>');
+    showModal('<h2 style="margin-bottom:20px;text-align:center;">' + t.daily_goals + '</h2><div id="tasks-container">' + t.loading + '</div>');
+    
     fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
         var cont = document.getElementById('tasks-container');
-        if (!Array.isArray(tasks) || tasks.length === 0) { cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals for today 🎯</p>'; return; }
+        if (!Array.isArray(tasks) || tasks.length === 0) {
+            cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals set for today 🎯</p>';
+            return;
+        }
         cont.innerHTML = tasks.map(function(tk){
-            var ok = tk.Status === 'Done';
-            var esc = tk.Task.replace(/'/g, "\\'");
-            return '<div class="overview-item" style="margin-bottom:10px; justify-content:space-between;" onclick="toggleTaskStatus(\'' + esc + '\', \'' + (ok ? 'Pending' : 'Done') + '\')">' +
-                   '<div style="display:flex; align-items:center; gap:12px;"><div class="item-icon ' + (ok ? 'feeding-bg' : 'task-bg') + '">' + (ok ? '✅' : '⭕') + '</div>' +
-                   '<span style="' + (ok ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;') + '">' + tk.Task + '</span></div></div>';
+            var isDone = tk.Status === 'Done';
+            var icon = isDone ? '✅' : '⭕';
+            var bgClass = isDone ? 'feeding-bg' : 'task-bg';
+            var style = isDone ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;';
+            var taskNameEscaped = tk.Task.replace(/'/g, "\\'");
+            return '<div class="overview-item" style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; padding:12px; border-radius:16px;" onclick="toggleTaskStatus(\'' + taskNameEscaped + '\', \'' + (isDone ? 'Pending' : 'Done') + '\')">' +
+                   '<div style="display:flex; align-items:center; gap:12px;"><div class="item-icon ' + bgClass + '" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;">' + icon + '</div>' +
+                   '<span style="' + style + '">' + tk.Task + '</span></div></div>';
         }).join('');
     });
 }
 
-function toggleTaskStatus(name, next) {
+function toggleTaskStatus(name, nextStatus) {
     var date = getTodayISO();
-    fetch('/api/tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ date: date, name: name, status: next }) }).then(function(){
-        try { tg.HapticFeedback.impactOccurred('light'); } catch(e){} openTaskList(); refreshOverviewPreviews();
+    fetch('/api/tasks', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({ date: date, name: name, status: nextStatus }) 
+    }).then(function(r){
+        if (r.ok) {
+            try { tg.HapticFeedback.impactOccurred('light'); } catch(e){}
+            openTaskList(); // Refresh the list modal
+            refreshOverviewPreviews(); // Refresh the progress bar on main screen
+        }
     });
 }
+
+// ── Modals & Interaction ──────────────────────────────────────────────────
 
 function openMealPlan(slot) {
     var date = getTodayISO();
@@ -299,7 +339,11 @@ function saveRecord(type) {
 function renderCalendar() {
     var container = document.getElementById('calendar-grid');
     if (!container) return;
-    var now = getHKDate(); var year = now.getFullYear(); var month = now.getMonth();
+    var year = viewDate.getFullYear(); var month = viewDate.getMonth();
+    
+    var title = document.getElementById('current-month-year');
+    if (title) title.innerText = viewDate.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', { month: 'long', year: 'numeric' });
+
     container.innerHTML = ''; ['S','M','T','W','T','F','S'].forEach(d => container.innerHTML += '<div style="font-size:0.7rem;font-weight:700;color:#ddd;text-align:center;">'+d+'</div>');
     var first = new Date(year, month, 1).getDay(); var days = new Date(year, month + 1, 0).getDate();
     for (var i = 0; i < first; i++) container.innerHTML += '<div></div>';
@@ -308,6 +352,16 @@ function renderCalendar() {
         var isS = ds === selectedDate;
         container.innerHTML += '<div class="day-cell ' + (isS ? 'selected' : '') + '" onclick="selectDate(\'' + ds + '\')">' + d + '</div>';
     }
+}
+
+function prevMonth() {
+    viewDate.setMonth(viewDate.getMonth() - 1);
+    renderCalendar();
+}
+
+function nextMonth() {
+    viewDate.setMonth(viewDate.getMonth() + 1);
+    renderCalendar();
 }
 
 // ── Initialization ───────────────────────────────────────────────────────────

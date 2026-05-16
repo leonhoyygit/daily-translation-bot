@@ -58,7 +58,7 @@ def get_sh():
 
 # ── Task Logic ──────────────────────────────────────────────────────────────
 
-def set_daily_tasks(date_str, tasks_list):
+def set_tasks(date_str, tasks_list):
     sh = get_sh()
     if not sh: return False
     try:
@@ -73,14 +73,13 @@ def set_daily_tasks(date_str, tasks_list):
                 new_rows.append([date_str, task_name.strip(), "Pending"])
         
         sheet.clear()
-        # Overwrite all data
         sheet.update("A1", new_rows)
         return True
     except Exception as e:
-        logger.error(f"set_daily_tasks error: {e}")
+        logger.error(f"set_tasks error: {e}")
         return False
 
-def get_daily_tasks(date_str):
+def get_tasks(date_str):
     sh = get_sh()
     if not sh: return []
     try:
@@ -88,10 +87,10 @@ def get_daily_tasks(date_str):
         records = sheet.get_all_records()
         return [r for r in records if str(r.get("Date")) == date_str]
     except Exception as e:
-        logger.error(f"get_daily_tasks error: {e}")
+        logger.error(f"get_tasks error: {e}")
         return []
 
-def update_task_status(date_str, task_name, status):
+def update_task(date_str, task_name, status):
     sh = get_sh()
     if not sh: return False
     try:
@@ -102,7 +101,7 @@ def update_task_status(date_str, task_name, status):
                 sheet.update_cell(i + 2, 3, status)
                 return True
     except Exception as e:
-        logger.error(f"update_task_status error: {e}")
+        logger.error(f"update_task error: {e}")
     return False
 
 # ── Meal Logic ──────────────────────────────────────────────────────────────
@@ -177,6 +176,14 @@ def get_daily_records(date_str):
         sheet = sh.worksheet("Daily_Records")
         all_records = sheet.get_all_records()
         return [r for r in all_records if str(r.get("Date")) == date_str]
+    except: return []
+
+def get_all_daily_records():
+    sh = get_sh()
+    if not sh: return []
+    try:
+        sheet = sh.worksheet("Daily_Records")
+        return sheet.get_all_records()
     except: return []
 
 def get_growth_metrics():
