@@ -71,15 +71,20 @@ var translations = {
     }
 };
 
-// ── Sync Engine with Catch Blocks ──────────────────────────────────────────
+// ── UI Update Logic ────────────────────────────────────────────────────────
+
+function updateOverviewDate() {
+    var today = new Date();
+    var options = { month: 'long', day: 'numeric', year: 'numeric' };
+    var el = document.getElementById('display-date');
+    if (el) el.innerText = today.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', options);
+}
 
 function refreshOverviewPreviews() {
     var date = getTodayISO();
     
     // Meals sync
-    fetch('/api/meal-plan/' + date)
-    .then(function(r){ return r.json(); })
-    .then(function(res){
+    fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
         var plan = {};
         if (res.meal_plan) {
             try {
@@ -94,38 +99,31 @@ function refreshOverviewPreviews() {
             if (el) el.innerText = val;
             if (card) card.classList.toggle('active-slot', val !== "--");
         });
-    })
-    .catch(function(e){ console.error("Meal preview error:", e); });
+    });
 
-    // Progress sync
-    fetch('/api/tasks/' + date)
-    .then(function(r){ return r.json(); })
-    .then(function(tasks){
+    // Goals Progress
+    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
         if(!Array.isArray(tasks)) return;
         var total = tasks.length;
         var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
         var pct = total > 0 ? (done / total) * 100 : 0;
-        
         var bar = document.getElementById('task-progress');
         var text = document.getElementById('task-preview');
         if (bar) bar.style.width = pct + "%";
         if (text) text.innerText = done + "/" + total + " completed";
-    })
-    .catch(function(e){ console.error("Task preview error:", e); });
+    });
 }
 
-// ── Immediate Modals ───────────────────────────────────────────────────────
+// ── Modals & Interaction ──────────────────────────────────────────────────
 
 function openTasksInput() {
     var t = translations[currentLanguage] || translations['en'];
     var date = getTodayISO();
-    
     showModal('<h2 style="margin-bottom:20px;text-align:center;">' + t.set_goals + '</h2>' +
             '<div class="form-group"><label>Date</label><input type="date" id="tasks-date" value="' + date + '"></div>' +
             '<div class="form-group"><label>Enter tasks (one per line)</label><textarea id="tasks-content" rows="8"></textarea></div>' +
             '<button class="btn-primary-pill" id="btn-save-tasks" onclick="saveDailyTasks()">Save Tasks</button>' +
             '<p style="margin-top:20px; text-align:center;"><button onclick="emergencyFix()" style="font-size:0.6rem; color:#ccc; background:none; border:1px solid #eee; padding:5px 10px; border-radius:10px;">Emergency Fix Database</button></p>');
-
     fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
         if (Array.isArray(tasks) && tasks.length > 0) {
             var el = document.getElementById('tasks-content');
@@ -135,55 +133,25 @@ function openTasksInput() {
 }
 
 function emergencyFix() {
-    if(!confirm("This will clear and reset today's tasks to fix database structure. Continue?")) return;
-    fetch('/api/force-fix-headers', {method:'POST'}).then(function(){
-        alert("Database structure reset! Try adding tasks again.");
-        closeForm();
-        refreshOverviewPreviews();
-    });
+    if(!confirm("Reset database structure?")) return;
+    fetch('/api/force-fix-headers', {method:'POST'}).then(function(){ alert("Reset complete!"); closeForm(); refreshOverviewPreviews(); });
 }
 
 function saveDailyTasks() {
-    var btn = document.getElementById('btn-save-tasks');
-    if (btn) { btn.disabled = true; btn.innerText = "Syncing with Google..."; }
-    
     var date = document.getElementById('tasks-date').value;
     var list = document.getElementById('tasks-content').value.split('\n').filter(function(x){ return x.trim(); });
-    
-    fetch('/api/set-tasks', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ date: date, tasks: list })
-    })
-    .then(function(r){
-        if (r.ok) {
-            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
-            closeForm();
-            refreshOverviewPreviews();
-        } else { alert("Network Error: Could not reach Google Sheets"); }
-    })
-    .catch(function(e){ alert("Fatal Sync Error: " + e.message); })
-    .finally(function(){ if (btn) { btn.disabled = false; btn.innerText = "Save Tasks"; } });
+    fetch('/api/set-tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ date: date, tasks: list }) }).then(function(r){
+        if (r.ok) { try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} closeForm(); refreshOverviewPreviews(); }
+    });
 }
 
 function openTaskList() {
     var t = translations[currentLanguage] || translations['en'];
     var date = getTodayISO();
-    
     showModal('<h2 style="margin-bottom:20px;text-align:center;">Daily Goals</h2><div id="tasks-container">' + t.loading + '</div>');
-
-    fetch('/api/tasks/' + date)
-    .then(function(r){ 
-        if(!r.ok) throw new Error("Server status " + r.status);
-        return r.json(); 
-    })
-    .then(function(tasks){
+    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
         var cont = document.getElementById('tasks-container');
-        if (!cont) return;
-        if (!Array.isArray(tasks) || tasks.length === 0) {
-            cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals set for today 🎯</p>';
-            return;
-        }
+        if (!Array.isArray(tasks) || tasks.length === 0) { cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals for today 🎯</p>'; return; }
         cont.innerHTML = tasks.map(function(tk){
             var ok = tk.Status === 'Done';
             var esc = tk.Task.replace(/'/g, "\\'");
@@ -191,75 +159,46 @@ function openTaskList() {
                    '<div style="display:flex; align-items:center; gap:12px;"><div class="item-icon ' + (ok ? 'feeding-bg' : 'task-bg') + '">' + (ok ? '✅' : '⭕') + '</div>' +
                    '<span style="' + (ok ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;') + '">' + tk.Task + '</span></div></div>';
         }).join('');
-    })
-    .catch(function(e){
-        var cont = document.getElementById('tasks-container');
-        if(cont) cont.innerHTML = '<p style="color:red;padding:20px;text-align:center;">Load Error: ' + e.message + '<br><br><button onclick="openTasksInput()" style="background:#eee;border:none;padding:10px;border-radius:10px;">Retry / Set Tasks</button></p>';
     });
 }
 
 function toggleTaskStatus(name, next) {
     var date = getTodayISO();
-    fetch('/api/tasks', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ date: date, name: name, status: next })
-    }).then(function(){
-        try { tg.HapticFeedback.impactOccurred('light'); } catch(e){}
-        openTaskList();
-        refreshOverviewPreviews();
+    fetch('/api/tasks', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ date: date, name: name, status: next }) }).then(function(){
+        try { tg.HapticFeedback.impactOccurred('light'); } catch(e){} openTaskList(); refreshOverviewPreviews();
     });
 }
 
 function openMealPlan(slot) {
     var date = getTodayISO();
     var s = slot || 'breakfast';
-    
     showModal('<h2 style="margin-bottom:20px;text-align:center;">Daily Menu</h2>' +
             '<div class="form-group"><label>Date</label><input type="date" id="meal-date" value="' + date + '"></div>' +
             '<div class="form-group"><label>Type</label><select id="meal-type">' +
             '<option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option>' +
             '</select></div>' +
             '<div class="form-group"><label>Dish Name</label><textarea id="meal-content" rows="3"></textarea></div>' +
-            '<button class="btn-primary-pill" id="btn-save-meal" onclick="saveMealData()">Save Meal</button>');
-    
+            '<button class="btn-primary-pill" onclick="saveMealData()">Save Meal</button>');
     document.getElementById('meal-type').value = s;
-
     var load = function() {
         var d = document.getElementById('meal-date').value;
         var ty = document.getElementById('meal-type').value;
         fetch('/api/meal-plan/' + d).then(function(r){ return r.json(); }).then(function(res){
             var p = {};
-            if (res.meal_plan) {
-                try {
-                    if (typeof res.meal_plan === 'string' && res.meal_plan.indexOf('{') === 0) p = JSON.parse(res.meal_plan);
-                    else p = { breakfast: res.meal_plan };
-                } catch(e) { p = { breakfast: res.meal_plan }; }
-            }
+            if (res.meal_plan) try { p = JSON.parse(res.meal_plan); } catch(e) { p = { breakfast: res.meal_plan }; }
             document.getElementById('meal-content').value = p[ty] || "";
         });
     };
-    document.getElementById('meal-date').onchange = load;
-    document.getElementById('meal-type').onchange = load;
-    load();
+    document.getElementById('meal-date').onchange = load; document.getElementById('meal-type').onchange = load; load();
 }
 
 function saveMealData() {
-    var btn = document.getElementById('btn-save-meal');
-    if (btn) { btn.disabled = true; btn.innerText = "Saving..."; }
-    
     var date = document.getElementById('meal-date').value;
     var type = document.getElementById('meal-type').value;
     var dish = document.getElementById('meal-content').value;
-
     fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
         var p = {};
-        if (res.meal_plan) {
-            try {
-                if (typeof res.meal_plan === 'string' && res.meal_plan.indexOf('{') === 0) p = JSON.parse(res.meal_plan);
-                else p = { breakfast: res.meal_plan };
-            } catch(e) { p = { breakfast: res.meal_plan }; }
-        }
+        if (res.meal_plan) try { p = JSON.parse(res.meal_plan); } catch(e) { p = { breakfast: res.meal_plan }; }
         p[type] = dish;
         return fetch('/api/meal-plan', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ date: date, meal_plan: JSON.stringify(p) }) });
     }).then(function(r){
@@ -268,14 +207,41 @@ function saveMealData() {
                 var tm = { breakfast: '09:00', lunch: '12:00', dinner: '18:00' };
                 fetch('/api/daily', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type: 'food', time: tm[type], detail1: type.toUpperCase() + ": " + dish, date: date }) });
             }
-            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
-            closeForm();
-            refreshOverviewPreviews();
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} closeForm(); refreshOverviewPreviews();
         }
-    }).finally(function(){ if (btn) { btn.disabled = false; btn.innerText = "Save Meal"; } });
+    });
 }
 
-// ── Generic ──────────────────────────────────────────────────────────────────
+// ── Tab & Navigation ────────────────────────────────────────────────────────
+
+function switchTab(t) {
+    document.querySelectorAll('.tab-content').forEach(function(x) { x.classList.toggle('active', x.id === 'tab-' + t); });
+    document.querySelectorAll('.nav-btn').forEach(function(x) { x.classList.toggle('active', x.id === 'nav-' + t); });
+    if (t === 'activities') loadTimeline(selectedDate);
+    if (t === 'calendar') renderCalendar();
+}
+
+function loadTimeline(date) {
+    var cont = document.getElementById('timeline-list');
+    var label = document.getElementById('activity-date-label');
+    if (label) label.innerText = (date === getTodayISO()) ? "Today" : date;
+    
+    cont.innerHTML = '<p style="text-align:center;padding:20px;">' + (translations[currentLanguage]?.loading || "Loading...") + '</p>';
+    fetch('/api/daily/' + date).then(function(r){ return r.json(); }).then(function(data){
+        if (!Array.isArray(data) || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
+        data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
+        cont.innerHTML = data.map(function(x){
+            return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
+        }).join('');
+    });
+}
+
+function selectDate(date) { 
+    selectedDate = date; 
+    switchTab('activities'); 
+}
+
+// ── Standard UI Helpers ─────────────────────────────────────────────────────
 
 function showModal(h) {
     var over = document.getElementById('form-modal');
@@ -294,8 +260,7 @@ function setLanguage(l) {
     document.querySelectorAll('.lang-pill button').forEach(function(b) {
         b.classList.toggle('active', b.id === 'btn-' + l);
     });
-    refreshOverviewPreviews();
-    checkBirthday();
+    updateOverviewDate(); refreshOverviewPreviews(); checkBirthday();
 }
 
 function checkBirthday() {
@@ -307,21 +272,13 @@ function checkBirthday() {
     }
 }
 
-function switchTab(t) {
-    document.querySelectorAll('.tab-content').forEach(function(x) { x.classList.toggle('active', x.id === 'tab-' + t); });
-    document.querySelectorAll('.nav-btn').forEach(function(x) { x.classList.toggle('active', x.id === 'nav-' + t); });
-    if (t === 'activities') loadTimeline(getTodayISO());
-}
-
 function openForm(type) {
     var t = translations[currentLanguage] || translations['en'];
     var h = '<h2 style="margin-bottom:25px;text-align:center;">' + t[type] + '</h2>' +
              '<div class="form-group"><label>Date</label><input type="date" id="f-date" value="' + getTodayISO() + '"></div>';
-
     if (type === 'sleep') h += '<div class="form-group"><label>Start</label><input type="time" id="f-start"></div><div class="form-group"><label>End</label><input type="time" id="f-end"></div>';
     else if (type === 'feeding') h += '<div class="form-group"><label>Time</label><input type="time" id="f-time"></div><div class="form-group"><label>Source</label><select id="f-detail1"><option value="Formula">Formula</option><option value="Water">Water</option></select></div><div class="form-group"><label>Amount</label><input type="number" id="f-detail2"></div>';
     else h += '<div class="form-group"><label>Time</label><input type="time" id="f-time"></div><div class="form-group"><label>Description</label><textarea id="f-detail1"></textarea></div>';
-
     h += '<button class="btn-primary-pill" onclick="saveRecord(\'' + type + '\')">' + t.save + '</button>';
     showModal(h);
     var now = new Date(); var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
@@ -329,28 +286,25 @@ function openForm(type) {
 }
 
 function saveRecord(type) {
-    var d = { 
-        type: type, date: document.getElementById('f-date').value, 
-        time: document.getElementById('f-time') ? document.getElementById('f-time').value : document.getElementById('f-start').value, 
-        detail1: document.getElementById('f-detail1') ? document.getElementById('f-detail1').value : "", 
-        detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : ""
-    };
+    var d = { type: type, date: document.getElementById('f-date').value, time: document.getElementById('f-time') ? document.getElementById('f-time').value : document.getElementById('f-start').value, detail1: document.getElementById('f-detail1') ? document.getElementById('f-detail1').value : "", detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : "" };
     fetch('/api/daily', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(){ closeForm(); refreshOverviewPreviews(); });
 }
 
-function loadTimeline(date) {
-    var cont = document.getElementById('timeline-list');
-    cont.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>';
-    fetch('/api/daily/' + date).then(function(r){ return r.json(); }).then(function(data){
-        if (!Array.isArray(data) || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
-        data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
-        cont.innerHTML = data.map(function(x){
-            return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
-        }).join('');
-    });
+function renderCalendar() {
+    var container = document.getElementById('calendar-grid');
+    if (!container) return;
+    var now = new Date(); var year = now.getFullYear(); var month = now.getMonth();
+    container.innerHTML = ''; ['S','M','T','W','T','F','S'].forEach(d => container.innerHTML += '<div style="font-size:0.7rem;font-weight:700;color:#ddd;text-align:center;">'+d+'</div>');
+    var first = new Date(year, month, 1).getDay(); var days = new Date(year, month + 1, 0).getDate();
+    for (var i = 0; i < first; i++) container.innerHTML += '<div></div>';
+    for (var d = 1; d <= days; d++) {
+        var ds = year + "-" + ("0" + (month + 1)).slice(-2) + "-" + ("0" + d).slice(-2);
+        var isS = ds === selectedDate;
+        container.innerHTML += '<div class="day-cell ' + (isS ? 'selected' : '') + '" onclick="selectDate(\'' + ds + '\')">' + d + '</div>';
+    }
 }
 
-// ── Start ──────────────────────────────────────────────────────────────────
+// ── Initialization ───────────────────────────────────────────────────────────
 setLanguage('en');
 switchTab('daily');
-console.log("Mini-App Diagnostics: Standardized.");
+renderCalendar();
