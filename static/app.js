@@ -4,9 +4,18 @@ try { tg.expand(); } catch(e) {}
 
 var currentLanguage = 'en';
 
+function getHKDate() {
+    // Create a Date object synchronized to Hong Kong Time
+    var hkStr = new Date().toLocaleString("en-US", {timeZone: "Asia/Hong_Kong"});
+    return new Date(hkStr);
+}
+
 function getTodayISO() {
-    // Explicitly force Hong Kong Time (UTC+8)
-    return new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
+    var d = getHKDate();
+    var y = d.getFullYear();
+    var m = ("0" + (d.getMonth() + 1)).slice(-2);
+    var day = ("0" + d.getDate()).slice(-2);
+    return y + "-" + m + "-" + day;
 }
 
 var selectedDate = getTodayISO();
@@ -71,7 +80,7 @@ var translations = {
 // ── UI Update Logic ────────────────────────────────────────────────────────
 
 function updateOverviewDate() {
-    var today = new Date();
+    var today = getHKDate();
     var options = { month: 'long', day: 'numeric', year: 'numeric' };
     var el = document.getElementById('display-date');
     if (el) el.innerText = today.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', options);
@@ -261,7 +270,7 @@ function setLanguage(l) {
 }
 
 function checkBirthday() {
-    var now = new Date();
+    var now = getHKDate();
     if (now.getMonth() === 4 && now.getDate() === 16) {
         document.body.classList.add('birthday-mode');
         var badge = document.getElementById('birthday-badge');
@@ -278,7 +287,7 @@ function openForm(type) {
     else h += '<div class="form-group"><label>Time</label><input type="time" id="f-time"></div><div class="form-group"><label>Description</label><textarea id="f-detail1"></textarea></div>';
     h += '<button class="btn-primary-pill" onclick="saveRecord(\'' + type + '\')">' + t.save + '</button>';
     showModal(h);
-    var now = new Date(); var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+    var now = getHKDate(); var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
     if (document.getElementById('f-time')) document.getElementById('f-time').value = ts;
 }
 
@@ -290,7 +299,7 @@ function saveRecord(type) {
 function renderCalendar() {
     var container = document.getElementById('calendar-grid');
     if (!container) return;
-    var now = new Date(); var year = now.getFullYear(); var month = now.getMonth();
+    var now = getHKDate(); var year = now.getFullYear(); var month = now.getMonth();
     container.innerHTML = ''; ['S','M','T','W','T','F','S'].forEach(d => container.innerHTML += '<div style="font-size:0.7rem;font-weight:700;color:#ddd;text-align:center;">'+d+'</div>');
     var first = new Date(year, month, 1).getDay(); var days = new Date(year, month + 1, 0).getDate();
     for (var i = 0; i < first; i++) container.innerHTML += '<div></div>';
