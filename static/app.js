@@ -184,6 +184,7 @@ function saveDailyTasks() {
     var date = document.getElementById('tasks-date').value;
     var raw = document.getElementById('tasks-content').value;
     var list = raw.split('\n').map(function(x){ return x.trim(); }).filter(function(x){ return x; });
+    var t = translations[currentLanguage] || translations['en'];
     
     fetch('/api/set-tasks', { 
         method: 'POST', 
@@ -192,10 +193,13 @@ function saveDailyTasks() {
     }).then(function(r){
         if (r.ok) {
             try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+            // Clear local cache to force refresh
+            localStorage.removeItem('cache_tasks_' + date);
             closeForm();
             refreshOverviewPreviews();
+            alert(t.success || "Success! 🥯");
         } else {
-            alert("Failed to sync tasks. Please try again.");
+            alert(t.error || "Error! 🍞");
         }
     });
 }
@@ -268,6 +272,8 @@ function saveMealData() {
     var date = document.getElementById('meal-date').value;
     var type = document.getElementById('meal-type').value;
     var dish = document.getElementById('meal-content').value;
+    var t = translations[currentLanguage] || translations['en'];
+
     fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
         var p = {};
         if (res.meal_plan) try { p = JSON.parse(res.meal_plan); } catch(e) { p = { breakfast: res.meal_plan }; }
@@ -279,7 +285,14 @@ function saveMealData() {
                 var tm = { breakfast: '09:00', lunch: '12:00', dinner: '18:00' };
                 fetch('/api/daily', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type: 'food', time: tm[type], detail1: type.toUpperCase() + ": " + dish, date: date }) });
             }
-            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} closeForm(); refreshOverviewPreviews();
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){} 
+            // Clear local cache to force refresh
+            localStorage.removeItem('cache_meals_' + date);
+            closeForm(); 
+            refreshOverviewPreviews();
+            alert(t.success || "Success! 🥯");
+        } else {
+            alert(t.error || "Error! 🍞");
         }
     });
 }
