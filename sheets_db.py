@@ -37,18 +37,27 @@ def get_sh():
         if not sh:
             try: sh = gc.open(SPREADSHEET_NAME)
             except gspread.SpreadsheetNotFound: sh = gc.create(SPREADSHEET_NAME)
-        
-        if sh:
-            def ensure(name, headers):
-                try: return sh.worksheet(name)
-                except gspread.WorksheetNotFound:
-                    s = sh.add_worksheet(title=name, rows="1000", cols="20")
+        # Ensure worksheets with correct headers
+        def ensure(name, headers):
+            try: 
+                s = sh.worksheet(name)
+                # Critical Migration: Check if headers match
+                actual = s.row_values(1)
+                if actual != headers:
+                    logger.warning(f"Header mismatch in {name}. Re-initializing...")
+                    s.clear()
                     s.append_row(headers)
-                    return s
-            ensure("Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
-            ensure("Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
-            ensure("Daily_Tasks", ["Date", "Task", "Status"])
-            ensure("Meal_Plans", ["Date", "MealPlan", "LastUpdated"])
+                return s
+            except gspread.WorksheetNotFound:
+                s = sh.add_worksheet(title=name, rows="1000", cols="20")
+                s.append_row(headers)
+                return s
+
+        ensure("Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
+        ensure("Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
+        ensure("Daily_Tasks", ["Date", "Task", "Status"])
+        ensure("Meal_Plans", ["Date", "MealPlan", "LastUpdated"])
+
         return sh
     except Exception as e:
         logger.error(f"GSheets Error: {e}")
