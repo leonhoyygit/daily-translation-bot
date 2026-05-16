@@ -4,22 +4,36 @@ try { tg.expand(); } catch(e) {}
 
 var currentLanguage = 'en';
 
-function getHKDate() {
+function getHKDate(isLogical) {
     var now = new Date();
+    // For logical day (Today), we subtract 4 hours so the day rolls over at 4 AM HK time
+    var target = isLogical ? new Date(now.getTime() - 4 * 60 * 60 * 1000) : now;
+    
     var formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Hong_Kong',
         year: 'numeric', month: 'numeric', day: 'numeric',
         hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
     });
-    var parts = formatter.formatToParts(now);
+    var parts = formatter.formatToParts(target);
     var d = {};
     parts.forEach(function(p) { if(p.type !== 'literal') d[p.type] = p.value; });
-    // Create a local date object with HK components to avoid any timezone/parsing ambiguity
+    
+    // If it's logical mode, we still want the REAL time for logging purposes, 
+    // but the DATE components from the logical target.
+    if (isLogical) {
+        var realParts = formatter.formatToParts(now);
+        var r = {};
+        realParts.forEach(function(p) { if(p.type !== 'literal') r[p.type] = p.value; });
+        d.hour = r.hour; d.minute = r.minute; d.second = r.second;
+    }
+
+    // Create a date object with these components. 
+    // Note: This Date object is in the LOCAL timezone but carries HK clock values.
     return new Date(d.year, d.month - 1, d.day, d.hour, d.minute, d.second);
 }
 
 function getTodayISO() {
-    var d = getHKDate();
+    var d = getHKDate(true); // Use logical date
     var y = d.getFullYear();
     var m = ("0" + (d.getMonth() + 1)).slice(-2);
     var day = ("0" + d.getDate()).slice(-2);
@@ -27,7 +41,7 @@ function getTodayISO() {
 }
 
 var selectedDate = getTodayISO();
-var viewDate = getHKDate();
+var viewDate = getHKDate(true); // Use logical date for calendar view too
 
 var translations = {
     en: {
@@ -46,7 +60,9 @@ var translations = {
         save_plan: "Save Plan", tasks: "Tasks", daily_goals: "Daily Goals",
         breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner",
         meal_type: "Meal Type", dish_name: "Dish Name", daily_menu: "Daily Menu",
-        set_goals: "Set Daily Goals", enter_tasks: "Enter tasks (one per line)", save_tasks: "Save Tasks"
+        set_goals: "Set Daily Goals", enter_tasks: "Enter tasks (one per line)", save_tasks: "Save Tasks",
+        months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+        months_zh: ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"]
     },
     id: {
         baby_quote: "Tumbuh dengan cinta ❤️",
@@ -89,10 +105,17 @@ var translations = {
 // ── UI Update Logic ────────────────────────────────────────────────────────
 
 function updateOverviewDate() {
-    var today = getHKDate();
-    var options = { month: 'long', day: 'numeric', year: 'numeric' };
+    var today = getHKDate(true); // Use logical date
+    var t = translations.en;
+    var monthName = currentLanguage === 'zh' ? t.months_zh[today.getMonth()] : t.months[today.getMonth()];
+    var day = today.getDate();
+    var year = today.getFullYear();
+    
     var el = document.getElementById('display-date');
-    if (el) el.innerText = today.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', options);
+    if (el) {
+        if (currentLanguage === 'zh') el.innerText = year + "年" + monthName + day + "日";
+        else el.innerText = monthName + " " + day + ", " + year;
+    }
 }
 
 function refreshOverviewPreviews() {
@@ -310,7 +333,7 @@ function setLanguage(l) {
 }
 
 function checkBirthday() {
-    var now = getHKDate();
+    var now = getHKDate(true); // Use logical date
     if (now.getMonth() === 4 && now.getDate() === 16) {
         document.body.classList.add('birthday-mode');
         var badge = document.getElementById('birthday-badge');
@@ -327,7 +350,7 @@ function openForm(type) {
     else h += '<div class="form-group"><label>Time</label><input type="time" id="f-time"></div><div class="form-group"><label>Description</label><textarea id="f-detail1"></textarea></div>';
     h += '<button class="btn-primary-pill" onclick="saveRecord(\'' + type + '\')">' + t.save + '</button>';
     showModal(h);
-    var now = getHKDate(); var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+    var now = getHKDate(true); var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
     if (document.getElementById('f-time')) document.getElementById('f-time').value = ts;
 }
 
@@ -342,7 +365,12 @@ function renderCalendar() {
     var year = viewDate.getFullYear(); var month = viewDate.getMonth();
     
     var title = document.getElementById('current-month-year');
-    if (title) title.innerText = viewDate.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', { month: 'long', year: 'numeric' });
+    if (title) {
+        var t = translations.en;
+        var monthName = currentLanguage === 'zh' ? t.months_zh[month] : t.months[month];
+        if (currentLanguage === 'zh') title.innerText = year + "年" + monthName;
+        else title.innerText = monthName + " " + year;
+    }
 
     container.innerHTML = ''; ['S','M','T','W','T','F','S'].forEach(d => container.innerHTML += '<div style="font-size:0.7rem;font-weight:700;color:#ddd;text-align:center;">'+d+'</div>');
     var first = new Date(year, month, 1).getDay(); var days = new Date(year, month + 1, 0).getDate();
