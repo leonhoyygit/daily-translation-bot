@@ -326,6 +326,13 @@ function loadTimeline(date) {
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────
-setLanguage('en');
-switchTab('daily');
-console.log("App Ready.");
+function initApp() {
+    console.log("App Initialization Started");
+    setLanguage('en');
+    switchTab('daily');
+    // Force a data refresh for the current local date
+    refreshOverviewPreviews();
+    console.log("App Ready for date:", getTodayISO());
+}
+
+initApp();
