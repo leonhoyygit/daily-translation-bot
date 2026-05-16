@@ -1,754 +1,331 @@
-const tg = window.Telegram.WebApp;
-tg.expand();
+// ── Definite High-Compatibility Rewrite ───────────────────────────────────────
+var tg = window.Telegram.WebApp;
+try { tg.expand(); } catch(e) {}
 
-let currentLanguage = 'en';
-let selectedDate = new Date().toISOString().split('T')[0];
-let currentCalendarDate = new Date();
-let charts = {};
+var currentLanguage = 'en';
 
-const translations = {
+function getTodayISO() {
+    var d = new Date();
+    var y = d.getFullYear();
+    var m = ("0" + (d.getMonth() + 1)).slice(-2);
+    var day = ("0" + d.getDate()).slice(-2);
+    return y + "-" + m + "-" + day;
+}
+
+var selectedDate = getTodayISO();
+
+var translations = {
     en: {
         baby_quote: "Growing with love every day! ❤️",
-        sleep: "Sleep",
-        diaper: "Diaper",
-        feeding: "Feeding",
-        food: "Solid Food",
-        care: "Care & Love",
-        activities: "Activities",
-        calendar: "Calendar",
-        tab_daily: "Daily",
-        tab_growth: "Growth",
-        log_growth: "Growth Metrics",
-        weight: "W (kg)",
-        height: "H (cm)",
-        head: "Head (cm)",
-        save: "Save Update",
-        time: "Time",
-        start_time: "Start",
-        end_time: "End",
-        size: "Size",
-        type: "Type",
-        remarks: "Remarks",
-        amount: "Amount (ml)",
-        source: "Source",
-        description: "Description",
-        success: "Success! 🥯",
-        error: "Error! 🍞",
-        loading: "Loading...",
-        weight_chart: "Weight Trend",
-        height_chart: "Height Trend",
-        head_chart: "Head Circumference",
-        breast_l: "Breast (L)",
-        breast_r: "Breast (R)",
-        formula: "Formula",
-        water: "Water",
-        pee: "Pee",
-        poop: "Poop",
-        both: "Both",
-        daily_overview: "Daily Overview",
-        meal_plan: "Meal Plan",
-        task_list: "Task List",
-        update_now: "Update now",
-        check_goals: "Check goals",
-        birthday: "Happy Birthday Andrea!",
-        save_plan: "Save Plan",
-        tasks: "Tasks",
-        daily_goals: "Daily Goals",
-        breakfast: "Breakfast",
-        lunch: "Lunch",
-        dinner: "Dinner",
-        meal_type: "Meal Type",
-        dish_name: "Dish Name",
-        daily_menu: "Daily Menu",
-        set_goals: "Set Daily Goals",
-        enter_tasks: "Enter tasks (one per line)",
-        save_tasks: "Save Tasks"
+        sleep: "Sleep", diaper: "Diaper", feeding: "Feeding", food: "Solid Food", care: "Care & Love",
+        activities: "Activities", calendar: "Calendar", tab_daily: "Daily", tab_growth: "Growth",
+        log_growth: "Growth Metrics", weight: "W (kg)", height: "H (cm)", head: "Head (cm)",
+        save: "Save Update", time: "Time", start_time: "Start", end_time: "End",
+        size: "Size", type: "Type", remarks: "Remarks", amount: "Amount (ml)",
+        source: "Source", description: "Description", success: "Success! 🥯", error: "Error! 🍞",
+        loading: "Loading...", weight_chart: "Weight Trend", height_chart: "Height Trend",
+        head_chart: "Head Circumference", breast_l: "Breast (L)", breast_r: "Breast (R)",
+        formula: "Formula", water: "Water", pee: "Pee", poop: "Poop", both: "Both",
+        daily_overview: "Daily Overview", meal_plan: "Meal Plan", task_list: "Task List",
+        update_now: "Update now", check_goals: "Check goals", birthday: "Happy Birthday Andrea!",
+        save_plan: "Save Plan", tasks: "Tasks", daily_goals: "Daily Goals",
+        breakfast: "Breakfast", lunch: "Lunch", dinner: "Dinner",
+        meal_type: "Meal Type", dish_name: "Dish Name", daily_menu: "Daily Menu",
+        set_goals: "Set Daily Goals", enter_tasks: "Enter tasks (one per line)", save_tasks: "Save Tasks"
     },
     id: {
         baby_quote: "Tumbuh dengan cinta ❤️",
-        sleep: "Tidur",
-        diaper: "Popok",
-        feeding: "Menyusui",
-        food: "Makanan",
-        care: "Perawatan",
-        activities: "Aktivitas",
-        calendar: "Kalender",
-        tab_daily: "Harian",
-        tab_growth: "Tumbuh",
-        log_growth: "Metrik Tumbuh",
-        weight: "B (kg)",
-        height: "T (cm)",
-        head: "Kepala (cm)",
-        save: "Simpan",
-        time: "Waktu",
-        start_time: "Mulai",
-        end_time: "Selesai",
-        size: "Ukuran",
-        type: "Tipe",
-        remarks: "Catatan",
-        amount: "Jumlah (ml)",
-        source: "Sumber",
-        description: "Deskripsi",
-        success: "Berhasil! 🥯",
-        error: "Gagal! 🍞",
-        loading: "Memuat...",
-        weight_chart: "Tren Berat",
-        height_chart: "Tren Tinggi",
-        head_chart: "Lingkar Kepala",
-        breast_l: "ASI (Ki)",
-        breast_r: "ASI (Ka)",
-        formula: "Formula",
-        water: "Air",
-        pee: "Pipis",
-        poop: "Pup",
-        both: "Keduanya",
-        daily_overview: "Ringkasan Harian",
-        meal_plan: "Menu Makan",
-        task_list: "Daftar Tugas",
-        update_now: "Perbarui",
-        check_goals: "Cek target",
-        birthday: "Selamat Ulang Tahun Andrea!",
-        save_plan: "Simpan Menu",
-        tasks: "Tugas",
-        daily_goals: "Target Harian",
-        breakfast: "Sarapan",
-        lunch: "Makan Siang",
-        dinner: "Makan Malam",
-        meal_type: "Tipe Makan",
-        dish_name: "Nama Masakan",
-        daily_menu: "Menu Harian",
-        set_goals: "Atur Target",
-        enter_tasks: "Masukkan tugas (satu per baris)",
-        save_tasks: "Simpan Tugas"
+        sleep: "Tidur", diaper: "Popok", feeding: "Menyusui", food: "Makanan", care: "Perawatan",
+        activities: "Aktivitas", calendar: "Kalender", tab_daily: "Harian", tab_growth: "Tumbuh",
+        log_growth: "Metrik Tumbuh", weight: "B (kg)", height: "T (cm)", head: "Kepala (cm)",
+        save: "Simpan", time: "Waktu", start_time: "Mulai", end_time: "Selesai",
+        size: "Ukuran", type: "Tipe", remarks: "Catatan", amount: "Jumlah (ml)",
+        source: "Sumber", description: "Deskripsi", success: "Berhasil! 🥯", error: "Gagal! 🍞",
+        loading: "Memuat...", weight_chart: "Tren Berat", height_chart: "Tren Tinggi",
+        head_chart: "Lingkar Kepala", breast_l: "ASI (Ki)", breast_r: "ASI (Ka)",
+        formula: "Formula", water: "Air", pee: "Pipis", poop: "Pup", both: "Keduanya",
+        daily_overview: "Ringkasan Harian", meal_plan: "Menu Makan", task_list: "Daftar Tugas",
+        update_now: "Perbarui", check_goals: "Cek target", birthday: "Selamat Ulang Tahun Andrea!",
+        save_plan: "Simpan Menu", tasks: "Tugas", daily_goals: "Target Harian",
+        breakfast: "Sarapan", lunch: "Makan Siang", dinner: "Makan Malam",
+        meal_type: "Tipe Makan", dish_name: "Nama Masakan", daily_menu: "Menu Harian",
+        set_goals: "Atur Target", enter_tasks: "Masukkan tugas (satu per baris)", save_tasks: "Simpan Tugas"
     },
     zh: {
         baby_quote: "在愛中茁壯成長 ❤️",
-        sleep: "睡眠",
-        diaper: "換片",
-        feeding: "喂奶",
-        food: "輔食",
-        care: "關愛",
-        activities: "活動",
-        calendar: "日曆",
-        tab_daily: "日常",
-        tab_growth: "成長",
-        log_growth: "成長數據",
-        weight: "體重 (kg)",
-        height: "身高 (cm)",
-        head: "頭圍 (cm)",
-        save: "儲存更新",
-        time: "時間",
-        start_time: "開始",
-        end_time: "結束",
-        size: "尺寸",
-        type: "類型",
-        remarks: "備註",
-        amount: "奶量 (ml)",
-        source: "方式",
-        description: "描述",
-        success: "儲存成功！🥯",
-        error: "出錯了！🍞",
-        loading: "加載中...",
-        weight_chart: "體重趨勢",
-        height_chart: "身高趨勢",
-        head_chart: "頭圍趨勢",
-        breast_l: "母乳 (左)",
-        breast_r: "母乳 (右)",
-        formula: "配方奶",
-        water: "飲水",
-        pee: "小便",
-        poop: "大便",
-        both: "大小便",
-        daily_overview: "每日概覽",
-        meal_plan: "今日食譜",
-        task_list: "任務清單",
-        update_now: "立即更新",
-        check_goals: "查看目標",
-        birthday: "祝 Andrea 生日快樂！",
-        save_plan: "儲存食譜",
-        tasks: "任務",
-        daily_goals: "今日目標",
-        breakfast: "早餐",
-        lunch: "午餐",
-        dinner: "晚餐",
-        meal_type: "餐點類型",
-        dish_name: "菜名",
-        daily_menu: "今日菜單",
-        set_goals: "設定今日目標",
-        enter_tasks: "輸入任務（每行一個）",
-        save_tasks: "儲存任務"
+        sleep: "睡眠", diaper: "換片", feeding: "喂奶", food: "輔食", care: "關愛",
+        activities: "活動", calendar: "日曆", tab_daily: "日常", tab_growth: "成長",
+        log_growth: "成長數據", weight: "體重 (kg)", height: "身高 (cm)", head: "頭圍 (cm)",
+        save: "儲存更新", time: "時間", start_time: "開始", end_time: "結束",
+        size: "尺寸", type: "類型", remarks: "備註", amount: "奶量 (ml)",
+        source: "方式", description: "描述", success: "儲存成功！🥯", error: "出錯了！🍞",
+        loading: "加載中...", weight_chart: "體重趨勢", height_chart: "身高趨勢",
+        head_chart: "頭圍趨勢", breast_l: "母乳 (左)", breast_r: "母乳 (右)",
+        formula: "配方奶", water: "飲水", pee: "小便", poop: "大便", both: "大小便",
+        daily_overview: "每日概覽", meal_plan: "今日食譜", task_list: "任務清單",
+        update_now: "立即更新", check_goals: "查看目標", birthday: "祝 Andrea 生日快樂！",
+        save_plan: "儲存食譜", tasks: "任務", daily_goals: "今日目標",
+        breakfast: "早餐", lunch: "午餐", dinner: "晚餐",
+        meal_type: "餐點類型", dish_name: "菜名", daily_menu: "今日菜單",
+        set_goals: "設定今日目標", enter_tasks: "輸入任務（每行一個）", save_tasks: "儲存任務"
     }
 };
 
-function checkBirthday() {
-    const today = new Date();
-    const isMay16 = (today.getMonth() === 4 && today.getDate() === 16);
-    if (isMay16) {
-        document.body.classList.add('birthday-mode');
-        document.getElementById('birthday-badge').style.display = 'flex';
-        document.getElementById('baby-quote').textContent = translations[currentLanguage].birthday + " 🎂🎉";
-    }
-}
+// ── UI Logic ────────────────────────────────────────────────────────────────
 
-function updateOverviewDate() {
-    const today = new Date();
-    const options = { month: 'long', day: 'numeric', year: 'numeric' };
-    document.getElementById('display-date').innerText = today.toLocaleDateString(currentLanguage === 'zh' ? 'zh-TW' : 'en-US', options);
-}
+function refreshOverviewPreviews() {
+    var date = getTodayISO();
+    
+    // Meals
+    fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
+        var plan = {};
+        if (res.meal_plan) {
+            try {
+                if (typeof res.meal_plan === 'string' && res.meal_plan.indexOf('{') === 0) plan = JSON.parse(res.meal_plan);
+                else plan = { breakfast: res.meal_plan };
+            } catch(e) { plan = { breakfast: res.meal_plan }; }
+        }
+        ['breakfast', 'lunch', 'dinner'].forEach(function(s) {
+            var el = document.getElementById(s + '-preview');
+            var card = document.getElementById('slot-' + s);
+            var val = plan[s] || "--";
+            if (el) el.innerText = val;
+            if (card) card.classList.toggle('active-slot', val !== "--");
+        });
+    });
 
-async function refreshOverviewPreviews() {
-    const date = new Date().toISOString().split('T')[0];
-    try {
-        const mealRes = await fetch(`/api/meal-plan/${date}`);
-        const mealData = await mealRes.json();
+    // Goals
+    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
+        var total = tasks.length;
+        var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
+        var pct = total > 0 ? (done / total) * 100 : 0;
         
-        const slots = ['breakfast', 'lunch', 'dinner'];
-        slots.forEach(slot => {
-            const el = document.getElementById(`${slot}-preview`);
-            if (el) {
+        var bar = document.getElementById('task-progress');
+        var text = document.getElementById('task-preview');
+        if (bar) bar.style.width = pct + "%";
+        if (text) text.innerText = done + "/" + total + " completed";
+    });
+}
+
+function openTasksInput() {
+    var t = translations[currentLanguage] || translations['en'];
+    var date = getTodayISO();
+    
+    var h = '<h2 style="margin-bottom:20px;text-align:center;">' + t.set_goals + '</h2>' +
+            '<div class="form-group"><label>Date</label><input type="date" id="tasks-date" value="' + date + '"></div>' +
+            '<div class="form-group"><label>Enter tasks (one per line)</label><textarea id="tasks-content" rows="8"></textarea></div>' +
+            '<button class="btn-primary-pill" onclick="saveTasks()">Save Tasks</button>';
+    
+    showModal(h);
+
+    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
+        if (tasks.length > 0) {
+            var el = document.getElementById('tasks-content');
+            if (el) el.value = tasks.map(function(tk){ return tk.Task; }).join('\n');
+        }
+    });
+}
+
+function saveTasks() {
+    var date = document.getElementById('tasks-date').value;
+    var list = document.getElementById('tasks-content').value.split('\n').filter(function(x){ return x.trim(); });
+    
+    fetch('/api/set-tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ date: date, tasks: list })
+    }).then(function(r){
+        if (r.ok) {
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+            closeForm();
+            refreshOverviewPreviews();
+        }
+    });
+}
+
+function openTaskList() {
+    var t = translations[currentLanguage] || translations['en'];
+    var date = getTodayISO();
+    
+    showModal('<h2 style="margin-bottom:20px;text-align:center;">Daily Goals</h2><div id="tasks-container">' + t.loading + '</div>');
+
+    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
+        var cont = document.getElementById('tasks-container');
+        if (!tasks || tasks.length === 0) {
+            cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals for today 🎯</p>';
+            return;
+        }
+        cont.innerHTML = tasks.map(function(tk){
+            var ok = tk.Status === 'Done';
+            var esc = tk.Task.replace(/'/g, "\\'");
+            return '<div class="overview-item" style="margin-bottom:10px; justify-content:space-between;" onclick="toggleTaskStatus(\'' + esc + '\', \'' + (ok ? 'Pending' : 'Done') + '\')">' +
+                   '<div style="display:flex; align-items:center; gap:12px;"><div class="item-icon ' + (ok ? 'feeding-bg' : 'task-bg') + '">' + (ok ? '✅' : '⭕') + '</div>' +
+                   '<span style="' + (ok ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;') + '">' + tk.Task + '</span></div></div>';
+        }).join('');
+    });
+}
+
+function toggleTaskStatus(name, next) {
+    var date = getTodayISO();
+    fetch('/api/tasks', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ date: date, name: name, status: next })
+    }).then(function(){
+        try { tg.HapticFeedback.impactOccurred('light'); } catch(e){}
+        openTaskList();
+        refreshOverviewPreviews();
+    });
+}
+
+function openMealPlan(slot) {
+    var t = translations[currentLanguage] || translations['en'];
+    var date = getTodayISO();
+    var s = slot || 'breakfast';
+
+    var h = '<h2 style="margin-bottom:20px;text-align:center;">Daily Menu</h2>' +
+            '<div class="form-group"><label>Date</label><input type="date" id="meal-date" value="' + date + '"></div>' +
+            '<div class="form-group"><label>Type</label><select id="meal-type">' +
+            '<option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option>' +
+            '</select></div>' +
+            '<div class="form-group"><label>Dish Name</label><textarea id="meal-content" rows="3"></textarea></div>' +
+            '<button class="btn-primary-pill" onclick="saveMealData()">Save Meal</button>';
+    
+    showModal(h);
+    document.getElementById('meal-type').value = s;
+
+    var load = function() {
+        var d = document.getElementById('meal-date').value;
+        var ty = document.getElementById('meal-type').value;
+        fetch('/api/meal-plan/' + d).then(function(r){ return r.json(); }).then(function(res){
+            var p = {};
+            if (res.meal_plan) {
                 try {
-                    const plan = mealData.meal_plan ? JSON.parse(mealData.meal_plan) : {};
-                    if (plan[slot]) {
-                        el.innerText = plan[slot];
-                        el.classList.remove('empty');
-                    } else {
-                        el.innerText = "--";
-                        el.classList.add('empty');
-                    }
-                } catch (e) {
-                    // Fallback for old plain text format
-                    if (slot === 'breakfast') {
-                        el.innerText = mealData.meal_plan || "--";
-                        el.classList.toggle('empty', !mealData.meal_plan);
-                    } else {
-                        el.innerText = "--";
-                        el.classList.add('empty');
-                    }
-                }
+                    if (typeof res.meal_plan === 'string' && res.meal_plan.indexOf('{') === 0) p = JSON.parse(res.meal_plan);
+                    else p = { breakfast: res.meal_plan };
+                } catch(e) { p = { breakfast: res.meal_plan }; }
             }
+            document.getElementById('meal-content').value = p[ty] || "";
         });
-
-        const taskRes = await fetch(`/api/tasks/${date}`);
-        const tasks = await taskRes.json();
-        const total = tasks.length;
-        const done = tasks.filter(t => t.Status === 'Done').length;
-        const percentage = total > 0 ? (done / total) * 100 : 0;
-        
-        document.getElementById('task-progress').style.width = `${percentage}%`;
-        document.getElementById('task-preview').innerText = `${done}/${total} completed`;
-    } catch (e) {
-        console.error("Error refreshing previews", e);
-    }
-}
-
-async function openMealPlan(initialType) {
-    const overlay = document.getElementById('form-modal');
-    const body = document.getElementById('modal-body');
-    const t = translations[currentLanguage];
-    
-    body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.meal_plan}</h2>
-        <div class="form-group">
-            <label>${t.calendar}</label>
-            <input type="date" id="meal-date" value="${new Date().toISOString().split('T')[0]}">
-        </div>
-        <div class="form-group">
-            <label>${t.meal_type}</label>
-            <select id="meal-type">
-                <option value="breakfast">${t.breakfast}</option>
-                <option value="lunch">${t.lunch}</option>
-                <option value="dinner">${t.dinner}</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <label>${t.dish_name}</label>
-            <textarea id="meal-content" rows="3" placeholder="e.g. Avocado Toast..."></textarea>
-        </div>
-        <button class="btn-primary-pill" onclick="saveMealPlan()">${t.save_plan}</button>`;
-    
-    if (initialType) document.getElementById('meal-type').value = initialType.toLowerCase();
-    overlay.classList.add('active');
-    
-    const updateFields = async () => {
-        const date = document.getElementById('meal-date').value;
-        const res = await fetch(`/api/meal-plan/${date}`);
-        const data = await res.json();
-        const type = document.getElementById('meal-type').value;
-        try {
-            const plan = data.meal_plan ? JSON.parse(data.meal_plan) : {};
-            document.getElementById('meal-content').value = plan[type] || "";
-        } catch (e) {
-            document.getElementById('meal-content').value = (type === 'breakfast') ? data.meal_plan || "" : "";
-        }
     };
-
-    document.getElementById('meal-date').onchange = updateFields;
-    document.getElementById('meal-type').onchange = updateFields;
-    updateFields();
+    document.getElementById('meal-date').onchange = load;
+    document.getElementById('meal-type').onchange = load;
+    load();
 }
 
-async function saveMealPlan() {
-    const btn = document.querySelector('.modal-sheet .btn-primary-pill');
-    const date = document.getElementById('meal-date').value;
-    const type = document.getElementById('meal-type').value;
-    const dish = document.getElementById('meal-content').value;
-    
-    btn.disabled = true;
-    btn.innerText = translations[currentLanguage].loading;
-    
-    try {
-        // 1. Get current plan and update it
-        const res = await fetch(`/api/meal-plan/${date}`);
-        const data = await res.json();
-        let plan = {};
-        try {
-            plan = data.meal_plan ? JSON.parse(data.meal_plan) : {};
-        } catch (e) {
-            plan = { 'breakfast': data.meal_plan };
+function saveMealData() {
+    var date = document.getElementById('meal-date').value;
+    var type = document.getElementById('meal-type').value;
+    var dish = document.getElementById('meal-content').value;
+
+    fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
+        var p = {};
+        if (res.meal_plan) {
+            try {
+                if (typeof res.meal_plan === 'string' && res.meal_plan.indexOf('{') === 0) p = JSON.parse(res.meal_plan);
+                else p = { breakfast: res.meal_plan };
+            } catch(e) { p = { breakfast: res.meal_plan }; }
         }
-        plan[type] = dish;
+        p[type] = dish;
 
-        // 2. Save meal plan
-        await fetch('/api/meal-plan', {
+        return fetch('/api/meal-plan', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ date, meal_plan: JSON.stringify(plan) })
+            body: JSON.stringify({ date: date, meal_plan: JSON.stringify(p) })
         });
-
-        // 3. Inject into timeline with hardcoded times
-        const timeMap = { 'breakfast': '09:00', 'lunch': '12:00', 'dinner': '18:00' };
-        if (dish) {
-            await fetch('/api/daily', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    type: 'food',
-                    time: timeMap[type],
-                    detail1: `${type.charAt(0).toUpperCase() + type.slice(1)}: ${dish}`,
-                    date: date
-                })
-            });
+    }).then(function(r){
+        if (r.ok) {
+            if (dish) {
+                var tm = { breakfast: '09:00', lunch: '12:00', dinner: '18:00' };
+                fetch('/api/daily', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ type: 'food', time: tm[type], detail1: type.toUpperCase() + ": " + dish, date: date })
+                });
+            }
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+            closeForm();
+            refreshOverviewPreviews();
         }
-
-        tg.HapticFeedback.notificationOccurred('success');
-        closeForm();
-        refreshOverviewPreviews();
-    } catch (e) {
-        tg.showAlert(translations[currentLanguage].error);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = translations[currentLanguage].save_plan;
-    }
-}
-
-async function openTaskList() {
-    const overlay = document.getElementById('form-modal');
-    const body = document.getElementById('modal-body');
-    const t = translations[currentLanguage];
-    const date = new Date().toISOString().split('T')[0];
-    
-    body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.task_list}</h2>
-        <div id="tasks-container" style="margin-bottom:20px;">${t.loading}</div>`;
-    
-    overlay.classList.add('active');
-    
-    const res = await fetch(`/api/tasks/${date}`);
-    const tasks = await res.json();
-    
-    if (tasks.length === 0) {
-        document.getElementById('tasks-container').innerHTML = `<p style="text-align:center;color:#ccc;padding:20px;">No goals set for today 🎯</p>`;
-        return;
-    }
-
-    let html = '';
-    tasks.forEach(task => {
-        const isDone = task.Status === 'Done';
-        html += `
-            <div class="overview-item" style="margin-bottom:8px; justify-content:space-between;" onclick="toggleTask('${task.Task}', '${isDone ? 'Pending' : 'Done'}')">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div class="item-icon ${isDone ? 'feeding-bg' : 'task-bg'}">${isDone ? '✅' : '⭕'}</div>
-                    <span style="${isDone ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;'}">${task.Task}</span>
-                </div>
-            </div>
-        `;
     });
-    document.getElementById('tasks-container').innerHTML = html;
 }
 
-async function toggleTask(name, newStatus) {
-    const date = new Date().toISOString().split('T')[0];
-    try {
-        await fetch('/api/tasks', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name: name, status: newStatus, date: date })
-        });
-        tg.HapticFeedback.impactOccurred('light');
-        openTaskList(); // Refresh list
-        refreshOverviewPreviews();
-    } catch (e) {
-        tg.showAlert(translations[currentLanguage].error);
-    }
-}
+// ── Helpers ──────────────────────────────────────────────────────────────────
 
-async function openTasksInput() {
-    const overlay = document.getElementById('form-modal');
-    const body = document.getElementById('modal-body');
-    const t = translations[currentLanguage];
-    const date = new Date().toISOString().split('T')[0];
-    
-    body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.set_goals}</h2>
-        <div class="form-group">
-            <label>${t.calendar}</label>
-            <input type="date" id="tasks-date" value="${date}">
-        </div>
-        <div class="form-group">
-            <label>${t.enter_tasks}</label>
-            <textarea id="tasks-content" rows="8" placeholder="e.g.\nMorning Feeding\nVitamin AD\nBath Time"></textarea>
-        </div>
-        <button class="btn-primary-pill" onclick="saveTasks()">${t.save_tasks}</button>`;
-    
-    overlay.classList.add('active');
-    
-    // Pre-fill existing
-    const res = await fetch(`/api/tasks/${date}`);
-    const tasks = await res.json();
-    if (tasks.length > 0) {
-        document.getElementById('tasks-content').value = tasks.map(t => t.Task).join('\n');
-    }
-}
-
-async function saveTasks() {
-    const btn = document.querySelector('.modal-sheet .btn-primary-pill');
-    const date = document.getElementById('tasks-date').value;
-    const content = document.getElementById('tasks-content').value;
-    const tasks = content.split('\n').filter(t => t.trim() !== "");
-    
-    btn.disabled = true;
-    btn.innerText = translations[currentLanguage].loading;
-    
-    try {
-        await fetch('/api/set-tasks', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ date: date, tasks: tasks })
-        });
-        tg.HapticFeedback.notificationOccurred('success');
-        closeForm();
-        refreshOverviewPreviews();
-    } catch (e) {
-        tg.showAlert(translations[currentLanguage].error);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = translations[currentLanguage].save_tasks;
-    }
-}
-
-
-function setLanguage(lang) {
-    currentLanguage = lang;
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[lang][key]) el.textContent = translations[lang][key];
-    });
-    document.querySelectorAll('.lang-pill button').forEach(btn => btn.classList.toggle('active', btn.id === `btn-${lang}`));
-    
-    updateOverviewDate();
-    checkBirthday();
-    
-    // Refresh timeline if active to translate dynamic content
-    if (document.getElementById('tab-activities').classList.contains('active')) {
-        loadTimeline(selectedDate);
-    }
-}
-
-function switchTab(tabId) {
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.toggle('active', tab.id === `tab-${tabId}`));
-    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.id === `nav-${tabId}`));
-    
-    if (tabId === 'activities') loadTimeline(selectedDate);
-    if (tabId === 'calendar') renderCalendar();
-    if (tabId === 'growth') { loadGrowthHistory(); setTimeout(initCharts, 100); }
-}
-
-// ── Interactive Form Fix ──────────────────────────────────────────────────
-
-function openForm(type) {
-    const overlay = document.getElementById('form-modal');
-    const body = document.getElementById('modal-body');
-    const t = translations[currentLanguage];
-    let html = `<h2 style="margin-bottom:25px;text-align:center;">${t[type]}</h2>`;
-
-    // Common Date field for all forms
-    html += `<div class="form-group"><label data-i18n="calendar">${t.calendar}</label><input type="date" id="f-date"></div>`;
-
-    if (type === 'sleep') {
-        html += `
-            <div class="form-group"><label>${t.start_time}</label><input type="time" id="f-start"></div>
-            <div class="form-group"><label>${t.end_time}</label><input type="time" id="f-end"></div>
-        `;
-    } else if (type === 'feeding') {
-        html += `
-            <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
-            <div class="form-group"><label>${t.source}</label><select id="f-detail1">
-                <option value="Formula" selected>${t.formula}</option>
-                <option value="Breast (L)">${t.breast_l}</option>
-                <option value="Breast (R)">${t.breast_r}</option>
-                <option value="Water">${t.water}</option>
-            </select></div>
-            <div class="form-group"><label>${t.amount}</label><input type="number" id="f-detail2"></div>
-        `;
-    } else if (type === 'diaper') {
-        html += `
-            <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
-            <div class="form-group"><label>${t.size}</label><select id="f-detail1">
-                <option value="NB">NB</option><option value="S">S</option><option value="M">M</option><option value="L">L</option>
-            </select></div>
-            <div class="form-group"><label>${t.type}</label><select id="f-detail2">
-                <option value="Pee">${t.pee}</option><option value="Poop">${t.poop}</option><option value="Both">${t.both}</option>
-            </select></div>
-        `;
-    } else if (type === 'food' || type === 'care') {
-        html += `
-            <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
-            <div class="form-group"><label>${t.description}</label><textarea id="f-detail1" rows="3" placeholder="..."></textarea></div>
-        `;
-    } else {
-        html += `
-            <div class="form-group"><label>${t.time}</label><input type="time" id="f-time"></div>
-            <div class="form-group"><label>${t.description}</label><textarea id="f-detail1" rows="3"></textarea></div>
-        `;
-    }
-
-    html += `
-        <div class="form-group"><label>${t.remarks}</label><textarea id="f-remarks" rows="2"></textarea></div>
-        <button class="btn-primary-pill" onclick="saveDaily('${type}')">${t.save}</button>
-    `;
-
-    body.innerHTML = html;
-    overlay.classList.add('active');
-    
-    // Set default values
-    const now = new Date();
-    const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-    
-    document.getElementById('f-date').value = selectedDate;
-    if (document.getElementById('f-time')) document.getElementById('f-time').value = timeStr;
-    if (document.getElementById('f-start')) document.getElementById('f-start').value = timeStr;
+function showModal(html) {
+    var over = document.getElementById('form-modal');
+    var body = document.getElementById('modal-body');
+    if (over && body) { body.innerHTML = html; over.classList.add('active'); }
 }
 
 function closeForm() { document.getElementById('form-modal').classList.remove('active'); }
 
-async function saveDaily(type) {
-    const btn = document.querySelector('.modal-sheet .btn-primary-pill');
-    const originalText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = translations[currentLanguage].loading;
-
-    const chosenDate = document.getElementById('f-date').value;
-
-    const data = {
-        type: type,
-        time: document.getElementById('f-time')?.value || document.getElementById('f-start')?.value,
-        detail1: document.getElementById('f-detail1')?.value || "",
-        detail2: document.getElementById('f-detail2')?.value || document.getElementById('f-end')?.value || "",
-        remarks: document.getElementById('f-remarks')?.value || "",
-        date: chosenDate
-    };
-
-    try {
-        const res = await fetch('/api/daily', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify(data) 
-        });
-        
-        if (res.ok) { 
-            tg.HapticFeedback.notificationOccurred('success'); 
-            closeForm(); 
-            tg.showAlert(translations[currentLanguage].success);
-            
-            // Switch view to the date that was just saved
-            selectedDate = chosenDate;
-            loadTimeline(chosenDate);
-            renderCalendar(); // Refresh dots
-        } else {
-            throw new Error('Save failed');
-        }
-    } catch (e) { 
-        tg.showAlert(translations[currentLanguage].error); 
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalText;
-    }
-}
-
-// ── Timeline Logic ──────────────────────────────────────────────────────────
-
-async function loadTimeline(date) {
-    const container = document.getElementById('timeline-list');
-    document.getElementById('activity-date-label').innerText = (date === new Date().toISOString().split('T')[0]) ? "Today" : date;
-    container.innerHTML = `<p style="text-align:center;padding:20px;color:#ccc;">${translations[currentLanguage].loading}</p>`;
-    
-    const translateValue = (val) => {
-        if (val === undefined || val === null || val === "") return "";
-        const strVal = String(val);
-        const map = {
-            "feeding": "feeding", "diaper": "diaper", "sleep": "sleep", "food": "food", "care": "care",
-            "Breast (L)": "breast_l", "Breast (R)": "breast_r", "Formula": "formula", "Water": "water",
-            "Pee": "pee", "Poop": "poop", "Both": "both"
-        };
-        const key = map[strVal] || map[strVal.toLowerCase()];
-        return key ? (translations[currentLanguage][key] || strVal) : strVal;
-    };
-
-    try {
-        const res = await fetch(`/api/daily/${date}`);
-        const records = await res.json();
-        if (records.length === 0) { container.innerHTML = `<p style="text-align:center;padding:40px;color:#ccc;">No logs for this day 🍞</p>`; return; }
-        records.sort((a, b) => a.Time.localeCompare(b.Time));
-        container.innerHTML = records.map(r => `
-            <div class="timeline-entry">
-                <div class="time-box">${r.Time}</div>
-                <div class="entry-details">
-                    <strong>${translateValue(r.Type).toUpperCase()}</strong>
-                    <span>${translateValue(r.Detail1)} ${r.Detail2 ? '| ' + translateValue(r.Detail2) : ''}</span>
-                    ${r.Remarks ? `<p style="font-size:0.75rem;color:#aaa;margin-top:4px;">${r.Remarks}</p>` : ''}
-                </div>
-            </div>
-        `).join('');
-    } catch (e) { container.innerHTML = 'Error loading logs.'; }
-}
-
-// ── Calendar Logic ──────────────────────────────────────────────────────────
-
-async function renderCalendar() {
-    const container = document.getElementById('calendar-grid');
-    const monthYear = document.getElementById('current-month-year');
-    const year = currentCalendarDate.getFullYear();
-    const month = currentCalendarDate.getMonth();
-    
-    monthYear.innerText = new Intl.DateTimeFormat(currentLanguage === 'zh' ? 'zh-TW' : currentLanguage, { month: 'short', year: 'numeric' }).format(currentCalendarDate);
-    container.innerHTML = '';
-    
-    ['S','M','T','W','T','F','S'].forEach(d => container.innerHTML += `<div style="font-size:0.7rem;font-weight:700;color:#ddd;text-align:center;">${d}</div>`);
-    
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    
-    // Fetch dates with activities to show dots
-    let activityDates = [];
-    try {
-        const res = await fetch('/api/activity-dates');
-        if (res.ok) activityDates = await res.json();
-    } catch(e) {}
-
-    for (let i = 0; i < firstDay; i++) container.innerHTML += `<div></div>`;
-    
-    for (let d = 1; d <= daysInMonth; d++) {
-        const dateStr = `${year}-${(month + 1).toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`;
-        const isSelected = dateStr === selectedDate;
-        const hasActivity = activityDates.includes(dateStr);
-        
-        container.innerHTML += `
-            <div class="day-cell ${isSelected ? 'selected' : ''} ${hasActivity ? 'has-activity' : ''}" onclick="selectDate('${dateStr}')">
-                ${d}
-                ${hasActivity && !isSelected ? '<span class="dot"></span>' : ''}
-            </div>
-        `;
-    }
-}
-
-function selectDate(date) { selectedDate = date; renderCalendar(); switchTab('activities'); }
-function prevMonth() { currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1); renderCalendar(); }
-function nextMonth() { currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1); renderCalendar(); }
-
-// ── Growth ──────────────────────────────────────────────────────────────────
-
-async function loadGrowthHistory() {
-    const res = await fetch('/api/growth');
-    const data = await res.json();
-    updateCharts(data);
-}
-
-function initCharts() {
-    const common = (label, color) => ({
-        type: 'line',
-        data: { labels: [], datasets: [{ label, data: [], borderColor: color, backgroundColor: color + '11', fill: true, tension: 0.4, pointRadius: 4 }] },
-        options: { 
-            responsive: true, 
-            plugins: { legend: { display: false } }, 
-            scales: { 
-                x: { 
-                    display: true, 
-                    grid: { display: false },
-                    ticks: { font: { size: 10 }, color: '#ccc' }
-                }, 
-                y: { grid: { display: false } } 
-            } 
-        }
+function setLanguage(l) {
+    currentLanguage = l;
+    document.querySelectorAll('[data-i18n]').forEach(function(el) {
+        var k = el.getAttribute('data-i18n');
+        if (translations[l][k]) el.textContent = translations[l][k];
     });
-    if (charts.weight) charts.weight.destroy(); 
-    if (charts.height) charts.height.destroy();
-    if (charts.head) charts.head.destroy();
-
-    charts.weight = new Chart(document.getElementById('weightChart'), common('Weight', '#ff4d4d'));
-    charts.height = new Chart(document.getElementById('heightChart'), common('Height', '#ffb6c1'));
-    charts.head = new Chart(document.getElementById('headChart'), common('Head', '#ffd700'));
+    document.querySelectorAll('.lang-pill button').forEach(function(b) {
+        b.classList.toggle('active', b.id === 'btn-' + l);
+    });
+    refreshOverviewPreviews();
+    checkBirthday();
 }
 
-function updateCharts(data) {
-    if (!data.length || !charts.weight) return;
-    const labels = data.map(h => h.Date);
-    charts.weight.data.labels = labels; charts.weight.data.datasets[0].data = data.map(h => h['Weight (kg)']); charts.weight.update();
-    charts.height.data.labels = labels; charts.height.data.datasets[0].data = data.map(h => h['Height (cm)']); charts.height.update();
-    charts.head.data.labels = labels; charts.head.data.datasets[0].data = data.map(h => h['Head (cm)']); charts.head.update();
+function checkBirthday() {
+    var now = new Date();
+    if (now.getMonth() === 4 && now.getDate() === 16) {
+        document.body.classList.add('birthday-mode');
+        var badge = document.getElementById('birthday-badge');
+        if (badge) badge.style.display = 'flex';
+    }
 }
 
-async function saveGrowth() {
-    const btn = document.querySelector('#tab-growth .btn-primary-pill');
-    const originalText = btn.innerText;
-    
-    const chosenDate = document.getElementById('growth-date').value;
+function switchTab(t) {
+    document.querySelectorAll('.tab-content').forEach(function(x) { x.classList.toggle('active', x.id === 'tab-' + t); });
+    document.querySelectorAll('.nav-btn').forEach(function(x) { x.classList.toggle('active', x.id === 'nav-' + t); });
+    if (t === 'activities') loadTimeline(getTodayISO());
+}
 
-    const data = { 
-        weight: document.getElementById('growth-weight').value, 
-        height: document.getElementById('growth-height').value, 
-        head: document.getElementById('growth-head').value, 
-        date: chosenDate 
+function openForm(type) {
+    var t = translations[currentLanguage] || translations['en'];
+    var h = '<h2 style="margin-bottom:25px;text-align:center;">' + t[type] + '</h2>' +
+             '<div class="form-group"><label>Date</label><input type="date" id="f-date" value="' + getTodayISO() + '"></div>';
+
+    if (type === 'sleep') h += '<div class="form-group"><label>Start</label><input type="time" id="f-start"></div><div class="form-group"><label>End</label><input type="time" id="f-end"></div>';
+    else if (type === 'feeding') h += '<div class="form-group"><label>Time</label><input type="time" id="f-time"></div><div class="form-group"><label>Source</label><select id="f-detail1"><option value="Formula">Formula</option><option value="Water">Water</option></select></div><div class="form-group"><label>Amount</label><input type="number" id="f-detail2"></div>';
+    else h += '<div class="form-group"><label>Time</label><input type="time" id="f-time"></div><div class="form-group"><label>Description</label><textarea id="f-detail1"></textarea></div>';
+
+    h += '<button class="btn-primary-pill" onclick="saveRecord(\'' + type + '\')">' + t.save + '</button>';
+    showModal(h);
+    var now = new Date(); var ts = ("0" + now.getHours()).slice(-2) + ":" + ("0" + now.getMinutes()).slice(-2);
+    if (document.getElementById('f-time')) document.getElementById('f-time').value = ts;
+}
+
+function saveRecord(type) {
+    var d = { 
+        type: type, date: document.getElementById('f-date').value, 
+        time: document.getElementById('f-time') ? document.getElementById('f-time').value : document.getElementById('f-start').value, 
+        detail1: document.getElementById('f-detail1') ? document.getElementById('f-detail1').value : "", 
+        detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : (document.getElementById('f-end') ? document.getElementById('f-end').value : "") 
     };
-    
-    if (!data.weight || !data.height) {
-        tg.showAlert("Please enter weight and height");
-        return;
-    }
+    fetch('/api/daily', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(){ closeForm(); refreshOverviewPreviews(); });
+}
 
-    btn.disabled = true;
-    btn.innerText = translations[currentLanguage].loading;
-
-    try {
-        const res = await fetch('/api/growth', { 
-            method: 'POST', 
-            headers: {'Content-Type': 'application/json'}, 
-            body: JSON.stringify(data) 
-        });
-        if (res.ok) {
-            loadGrowthHistory(); 
-            tg.showAlert(translations[currentLanguage].success);
-            selectedDate = chosenDate;
-            renderCalendar();
-        } else {
-            throw new Error('Growth save failed');
-        }
-    } catch (e) {
-        tg.showAlert(translations[currentLanguage].error);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalText;
-    }
+function loadTimeline(date) {
+    var cont = document.getElementById('timeline-list');
+    cont.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>';
+    fetch('/api/daily/' + date).then(function(r){ return r.json(); }).then(function(data){
+        if (!data || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
+        data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
+        cont.innerHTML = data.map(function(x){
+            return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
+        }).join('');
+    });
 }
 
 // ── Init ────────────────────────────────────────────────────────────────────
 setLanguage('en');
 switchTab('daily');
-document.getElementById('growth-date').value = selectedDate;
-refreshOverviewPreviews();
+console.log("App Ready.");
