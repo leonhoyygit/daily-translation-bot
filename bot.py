@@ -182,6 +182,23 @@ async def get_daily(date_str: str):
     records = sheets_db.get_daily_records(date_str)
     return records
 
+@app.post("/api/daily/delete")
+async def delete_daily(record: dict):
+    try:
+        success = sheets_db.delete_daily_record(
+            date_str=record.get("date"),
+            record_type=record.get("type"),
+            time=record.get("time"),
+            detail1=record.get("detail1", "")
+        )
+        if not success:
+            logger.error(f"Failed to delete record: {record}")
+            raise HTTPException(status_code=404, detail="Record not found or failed to delete")
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Exception in delete_daily: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/activity-dates")
 async def get_activity_dates():
     records = sheets_db.get_all_daily_records()

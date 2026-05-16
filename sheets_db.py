@@ -246,6 +246,26 @@ def get_growth_metrics():
             return []
     return data
 
+def delete_daily_record(date_str, record_type, time, detail1):
+    sh = get_sh()
+    if not sh: return False
+    try:
+        sheet = sh.worksheet("Daily_Records")
+        records = sheet.get_all_records()
+        for i, r in enumerate(records):
+            # Row index in gspread is 1-based, and row 1 is header
+            if (str(r.get("Date")) == date_str and 
+                str(r.get("Type")) == record_type and 
+                str(r.get("Time")) == time and 
+                str(r.get("Detail1")) == detail1):
+                sheet.delete_rows(i + 2)
+                _invalidate_cache("Daily_Records")
+                return True
+        return False
+    except Exception as e:
+        logger.error(f"delete_daily_record error: {e}")
+        return False
+
 def log_growth_metric(weight, height, head, date_str=None):
     if not date_str: date_str = datetime.now().strftime("%Y-%m-%d")
     sh = get_sh()

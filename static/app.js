@@ -330,8 +330,44 @@ function renderTimelineUI(data) {
     if (!Array.isArray(data) || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
     data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
     cont.innerHTML = data.map(function(x){
-        return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
+        var safeDetail = x.Detail1.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+        var safeType = x.Type.replace(/'/g, "\\'");
+        var safeTime = x.Time.replace(/'/g, "\\'");
+        return '<div class="timeline-entry">' +
+               '<div class="time-box">' + x.Time + '</div>' +
+               '<div class="entry-details" style="flex:1;"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div>' +
+               '<button class="delete-btn" onclick="deleteRecord(\'' + selectedDate + '\', \'' + safeType + '\', \'' + safeTime + '\', \'' + safeDetail + '\')">🗑️</button>' +
+               '</div>';
     }).join('');
+}
+
+function deleteRecord(date, type, time, detail1) {
+    var t = translations[currentLanguage] || translations['en'];
+    if (!confirm("Delete this activity?")) return;
+
+    // Optimistic Update
+    var cached = localStorage.getItem('cache_timeline_' + date);
+    if (cached) {
+        var timeline = JSON.parse(cached);
+        var filtered = timeline.filter(function(item) {
+            return !(item.Time === time && item.Type === type && item.Detail1 === detail1);
+        });
+        localStorage.setItem('cache_timeline_' + date, JSON.stringify(filtered));
+        renderTimelineUI(filtered);
+    }
+
+    fetch('/api/daily/delete', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ date: date, type: type, time: time, detail1: detail1 })
+    }).then(function(r){
+        if (r.ok) {
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+        } else {
+            alert(t.error || "Error! 🍞");
+            loadTimeline(date); // Re-sync if failed
+        }
+    });
 }
 
 function selectDate(date) { 
