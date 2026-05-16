@@ -108,7 +108,14 @@ function updateOverviewDate() {
 function refreshOverviewPreviews() {
     var date = getTodayISO();
     
-    // Meals preview
+    // Use localStorage cache for immediate display
+    var cachedMeals = localStorage.getItem('cache_meals_' + date);
+    if (cachedMeals) updateMealsUI(JSON.parse(cachedMeals));
+
+    var cachedTasks = localStorage.getItem('cache_tasks_' + date);
+    if (cachedTasks) updateTasksUI(JSON.parse(cachedTasks));
+
+    // Background refresh
     fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
         var plan = {};
         if (res.meal_plan) {
@@ -117,30 +124,39 @@ function refreshOverviewPreviews() {
                 else plan = { breakfast: res.meal_plan };
             } catch(e) { plan = { breakfast: res.meal_plan }; }
         }
-        ['breakfast', 'lunch', 'dinner'].forEach(function(s) {
-            var el = document.getElementById(s + '-preview');
-            var card = document.getElementById('slot-' + s);
-            var val = plan[s] || "--";
-            if (el) el.innerText = val;
-            if (card) card.classList.toggle('active-slot', val !== "--");
-        });
+        localStorage.setItem('cache_meals_' + date, JSON.stringify(plan));
+        updateMealsUI(plan);
     });
 
-    // Goals Progress sync
     fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
-        var bar = document.getElementById('task-progress');
-        var text = document.getElementById('task-preview');
-        if (!Array.isArray(tasks) || tasks.length === 0) {
-            if (bar) bar.style.width = "0%";
-            if (text) text.innerText = "0/0 completed";
-            return;
-        }
-        var total = tasks.length;
-        var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
-        var pct = (done / total) * 100;
-        if (bar) bar.style.width = pct + "%";
-        if (text) text.innerText = done + "/" + total + " completed";
+        localStorage.setItem('cache_tasks_' + date, JSON.stringify(tasks));
+        updateTasksUI(tasks);
     });
+}
+
+function updateMealsUI(plan) {
+    ['breakfast', 'lunch', 'dinner'].forEach(function(s) {
+        var el = document.getElementById(s + '-preview');
+        var card = document.getElementById('slot-' + s);
+        var val = plan[s] || "--";
+        if (el) el.innerText = val;
+        if (card) card.classList.toggle('active-slot', val !== "--");
+    });
+}
+
+function updateTasksUI(tasks) {
+    var bar = document.getElementById('task-progress');
+    var text = document.getElementById('task-preview');
+    if (!Array.isArray(tasks) || tasks.length === 0) {
+        if (bar) bar.style.width = "0%";
+        if (text) text.innerText = "0/0 completed";
+        return;
+    }
+    var total = tasks.length;
+    var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
+    var pct = (done / total) * 100;
+    if (bar) bar.style.width = pct + "%";
+    if (text) text.innerText = done + "/" + total + " completed";
 }
 
 // ── Tasks & Daily Goals Logic ──────────────────────────────────────────────
@@ -282,14 +298,27 @@ function loadTimeline(date) {
     var label = document.getElementById('activity-date-label');
     if (label) label.innerText = (date === getTodayISO()) ? "Today" : date;
     
-    cont.innerHTML = '<p style="text-align:center;padding:20px;">' + (translations[currentLanguage]?.loading || "Loading...") + '</p>';
+    // Immediate display from cache
+    var cached = localStorage.getItem('cache_timeline_' + date);
+    if (cached) renderTimelineUI(JSON.parse(cached));
+    else cont.innerHTML = '<p style="text-align:center;padding:20px;">' + (translations[currentLanguage]?.loading || "Loading...") + '</p>';
+
+    // Background refresh
     fetch('/api/daily/' + date).then(function(r){ return r.json(); }).then(function(data){
-        if (!Array.isArray(data) || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
-        data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
-        cont.innerHTML = data.map(function(x){
-            return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
-        }).join('');
+        if (Array.isArray(data)) {
+            localStorage.setItem('cache_timeline_' + date, JSON.stringify(data));
+            renderTimelineUI(data);
+        }
     });
+}
+
+function renderTimelineUI(data) {
+    var cont = document.getElementById('timeline-list');
+    if (!Array.isArray(data) || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
+    data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
+    cont.innerHTML = data.map(function(x){
+        return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
+    }).join('');
 }
 
 function selectDate(date) { 
@@ -342,8 +371,31 @@ function openForm(type) {
 }
 
 function saveRecord(type) {
-    var d = { type: type, date: document.getElementById('f-date').value, time: document.getElementById('f-time') ? document.getElementById('f-time').value : document.getElementById('f-start').value, detail1: document.getElementById('f-detail1') ? document.getElementById('f-detail1').value : "", detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : "" };
-    fetch('/api/daily', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(){ closeForm(); refreshOverviewPreviews(); });
+    var d = { 
+        type: type, 
+        date: document.getElementById('f-date').value, 
+        time: document.getElementById('f-time') ? document.getElementById('f-time').value : document.getElementById('f-start').value, 
+        detail1: document.getElementById('f-detail1') ? document.getElementById('f-detail1').value : "", 
+        detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : "" 
+    };
+    
+    // Optimistic Update: Add to local timeline cache immediately
+    var cached = localStorage.getItem('cache_timeline_' + d.date);
+    var timeline = cached ? JSON.parse(cached) : [];
+    timeline.push({ Time: d.time, Type: d.type, Detail1: d.detail1 });
+    localStorage.setItem('cache_timeline_' + d.date, JSON.stringify(timeline));
+    
+    // If we are viewing the timeline for this date, render it immediately
+    if (selectedDate === d.date && document.getElementById('tab-activities').classList.contains('active')) {
+        renderTimelineUI(timeline);
+    }
+
+    fetch('/api/daily', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(){ 
+        closeForm(); 
+        refreshOverviewPreviews(); 
+        // Background refresh to sync with server
+        loadTimeline(d.date);
+    });
 }
 
 function renderCalendar() {

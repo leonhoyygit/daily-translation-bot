@@ -14,6 +14,28 @@ GOOGLE_CREDS_PATH = "google_creds.json"
 SPREADSHEET_NAME = "Baby_Tracker_Data"
 SPREADSHEET_ID = os.environ.get("SPREADSHEET_ID")
 
+# In-memory cache to reduce API calls
+# Structure: { "worksheet_name": (timestamp, data_list) }
+_CACHE = {}
+_CACHE_TTL = 60  # seconds
+
+def _get_from_cache(key):
+    if key in _CACHE:
+        ts, data = _CACHE[key]
+        if (datetime.now() - ts).total_seconds() < _CACHE_TTL:
+            return data
+    return None
+
+def _save_to_cache(key, data):
+    _CACHE[key] = (datetime.now(), data)
+
+def _invalidate_cache(key=None):
+    global _CACHE
+    if key:
+        if key in _CACHE: del _CACHE[key]
+    else:
+        _CACHE = {}
+
 def get_credentials():
     scopes = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
     try:
@@ -74,21 +96,25 @@ def set_tasks(date_str, tasks_list):
         
         sheet.clear()
         sheet.update("A1", new_rows)
+        _invalidate_cache("Daily_Tasks")
         return True
     except Exception as e:
         logger.error(f"set_tasks error: {e}")
         return False
 
 def get_tasks(date_str):
-    sh = get_sh()
-    if not sh: return []
-    try:
-        sheet = sh.worksheet("Daily_Tasks")
-        records = sheet.get_all_records()
-        return [r for r in records if str(r.get("Date")) == date_str]
-    except Exception as e:
-        logger.error(f"get_tasks error: {e}")
-        return []
+    data = _get_from_cache("Daily_Tasks")
+    if data is None:
+        sh = get_sh()
+        if not sh: return []
+        try:
+            sheet = sh.worksheet("Daily_Tasks")
+            data = sheet.get_all_records()
+            _save_to_cache("Daily_Tasks", data)
+        except Exception as e:
+            logger.error(f"get_tasks error: {e}")
+            return []
+    return [r for r in data if str(r.get("Date")) == date_str]
 
 def update_task(date_str, task_name, status):
     sh = get_sh()
@@ -99,6 +125,7 @@ def update_task(date_str, task_name, status):
         for i, r in enumerate(records):
             if str(r.get("Date")) == date_str and str(r.get("Task")) == task_name:
                 sheet.update_cell(i + 2, 3, status)
+                _invalidate_cache("Daily_Tasks")
                 return True
     except Exception as e:
         logger.error(f"update_task error: {e}")
@@ -121,22 +148,28 @@ def log_meal_plan(date_str, meal_plan):
             sheet.update_cell(cell.row, 3, now_str)
         else:
             sheet.append_row([date_str, meal_plan, now_str])
+        _invalidate_cache("Meal_Plans")
         return True
     except Exception as e:
         logger.error(f"log_meal_plan error: {e}")
         return False
 
 def get_meal_plan(date_str):
-    sh = get_sh()
-    if not sh: return ""
-    try:
-        sheet = sh.worksheet("Meal_Plans")
-        records = sheet.get_all_records()
-        for r in records:
-            if str(r.get("Date")) == date_str:
-                return r.get("MealPlan", "")
-    except Exception as e:
-        logger.error(f"get_meal_plan error: {e}")
+    data = _get_from_cache("Meal_Plans")
+    if data is None:
+        sh = get_sh()
+        if not sh: return ""
+        try:
+            sheet = sh.worksheet("Meal_Plans")
+            data = sheet.get_all_records()
+            _save_to_cache("Meal_Plans", data)
+        except Exception as e:
+            logger.error(f"get_meal_plan error: {e}")
+            return ""
+    
+    for r in data:
+        if str(r.get("Date")) == date_str:
+            return r.get("MealPlan", "")
     return ""
 
 # ── Direct Header Fix (Manual trigger only) ──────────────────────────────────
@@ -153,6 +186,7 @@ def force_fix_headers():
             ws = sh.worksheet(name)
             ws.clear()
             ws.append_row(headers)
+        _invalidate_cache()
         return True
     except: return False
 
@@ -165,32 +199,52 @@ def log_daily_record(record_type, time, detail1="", detail2="", detail3="", rema
         try:
             sheet = sh.worksheet("Daily_Records")
             sheet.append_row([date_str, record_type, time, detail1, detail2, detail3, remarks])
+            _invalidate_cache("Daily_Records")
             return True
         except: pass
     return False
 
 def get_daily_records(date_str):
-    sh = get_sh()
-    if not sh: return []
-    try:
-        sheet = sh.worksheet("Daily_Records")
-        all_records = sheet.get_all_records()
-        return [r for r in all_records if str(r.get("Date")) == date_str]
-    except: return []
+    data = _get_from_cache("Daily_Records")
+    if data is None:
+        sh = get_sh()
+        if not sh: return []
+        try:
+            sheet = sh.worksheet("Daily_Records")
+            data = sheet.get_all_records()
+            _save_to_cache("Daily_Records", data)
+        except Exception as e:
+            logger.error(f"get_daily_records error: {e}")
+            return []
+    return [r for r in data if str(r.get("Date")) == date_str]
 
 def get_all_daily_records():
-    sh = get_sh()
-    if not sh: return []
-    try:
-        sheet = sh.worksheet("Daily_Records")
-        return sheet.get_all_records()
-    except: return []
+    data = _get_from_cache("Daily_Records")
+    if data is None:
+        sh = get_sh()
+        if not sh: return []
+        try:
+            sheet = sh.worksheet("Daily_Records")
+            data = sheet.get_all_records()
+            _save_to_cache("Daily_Records", data)
+        except Exception as e:
+            logger.error(f"get_all_daily_records error: {e}")
+            return []
+    return data
 
 def get_growth_metrics():
-    sh = get_sh()
-    if not sh: return []
-    try: return sh.worksheet("Growth_Metrics").get_all_records()
-    except: return []
+    data = _get_from_cache("Growth_Metrics")
+    if data is None:
+        sh = get_sh()
+        if not sh: return []
+        try:
+            sheet = sh.worksheet("Growth_Metrics")
+            data = sheet.get_all_records()
+            _save_to_cache("Growth_Metrics", data)
+        except Exception as e:
+            logger.error(f"get_growth_metrics error: {e}")
+            return []
+    return data
 
 def log_growth_metric(weight, height, head, date_str=None):
     if not date_str: date_str = datetime.now().strftime("%Y-%m-%d")
@@ -198,6 +252,7 @@ def log_growth_metric(weight, height, head, date_str=None):
     if sh:
         try:
             sh.worksheet("Growth_Metrics").append_row([date_str, weight, height, head])
+            _invalidate_cache("Growth_Metrics")
             return True
         except: pass
     return False
