@@ -1,4 +1,4 @@
-// ── Definite High-Compatibility Rewrite ───────────────────────────────────────
+// ── Definitive UI Fix & Diagnostics ──────────────────────────────────────────
 var tg = window.Telegram.WebApp;
 try { tg.expand(); } catch(e) {}
 
@@ -71,13 +71,15 @@ var translations = {
     }
 };
 
-// ── UI Logic ────────────────────────────────────────────────────────────────
+// ── Sync Engine with Catch Blocks ──────────────────────────────────────────
 
 function refreshOverviewPreviews() {
     var date = getTodayISO();
     
-    // Meals
-    fetch('/api/meal-plan/' + date).then(function(r){ return r.json(); }).then(function(res){
+    // Meals sync
+    fetch('/api/meal-plan/' + date)
+    .then(function(r){ return r.json(); })
+    .then(function(res){
         var plan = {};
         if (res.meal_plan) {
             try {
@@ -92,10 +94,14 @@ function refreshOverviewPreviews() {
             if (el) el.innerText = val;
             if (card) card.classList.toggle('active-slot', val !== "--");
         });
-    });
+    })
+    .catch(function(e){ console.error("Meal preview error:", e); });
 
-    // Goals
-    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
+    // Progress sync
+    fetch('/api/tasks/' + date)
+    .then(function(r){ return r.json(); })
+    .then(function(tasks){
+        if(!Array.isArray(tasks)) return;
         var total = tasks.length;
         var done = tasks.filter(function(t){ return t.Status === 'Done'; }).length;
         var pct = total > 0 ? (done / total) * 100 : 0;
@@ -104,29 +110,43 @@ function refreshOverviewPreviews() {
         var text = document.getElementById('task-preview');
         if (bar) bar.style.width = pct + "%";
         if (text) text.innerText = done + "/" + total + " completed";
-    });
+    })
+    .catch(function(e){ console.error("Task preview error:", e); });
 }
+
+// ── Immediate Modals ───────────────────────────────────────────────────────
 
 function openTasksInput() {
     var t = translations[currentLanguage] || translations['en'];
     var date = getTodayISO();
     
-    var h = '<h2 style="margin-bottom:20px;text-align:center;">' + t.set_goals + '</h2>' +
+    showModal('<h2 style="margin-bottom:20px;text-align:center;">' + t.set_goals + '</h2>' +
             '<div class="form-group"><label>Date</label><input type="date" id="tasks-date" value="' + date + '"></div>' +
             '<div class="form-group"><label>Enter tasks (one per line)</label><textarea id="tasks-content" rows="8"></textarea></div>' +
-            '<button class="btn-primary-pill" onclick="saveTasks()">Save Tasks</button>';
-    
-    showModal(h);
+            '<button class="btn-primary-pill" id="btn-save-tasks" onclick="saveDailyTasks()">Save Tasks</button>' +
+            '<p style="margin-top:20px; text-align:center;"><button onclick="emergencyFix()" style="font-size:0.6rem; color:#ccc; background:none; border:1px solid #eee; padding:5px 10px; border-radius:10px;">Emergency Fix Database</button></p>');
 
     fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
-        if (tasks.length > 0) {
+        if (Array.isArray(tasks) && tasks.length > 0) {
             var el = document.getElementById('tasks-content');
             if (el) el.value = tasks.map(function(tk){ return tk.Task; }).join('\n');
         }
     });
 }
 
-function saveTasks() {
+function emergencyFix() {
+    if(!confirm("This will clear and reset today's tasks to fix database structure. Continue?")) return;
+    fetch('/api/force-fix-headers', {method:'POST'}).then(function(){
+        alert("Database structure reset! Try adding tasks again.");
+        closeForm();
+        refreshOverviewPreviews();
+    });
+}
+
+function saveDailyTasks() {
+    var btn = document.getElementById('btn-save-tasks');
+    if (btn) { btn.disabled = true; btn.innerText = "Syncing with Google..."; }
+    
     var date = document.getElementById('tasks-date').value;
     var list = document.getElementById('tasks-content').value.split('\n').filter(function(x){ return x.trim(); });
     
@@ -134,13 +154,16 @@ function saveTasks() {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ date: date, tasks: list })
-    }).then(function(r){
+    })
+    .then(function(r){
         if (r.ok) {
             try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
             closeForm();
             refreshOverviewPreviews();
-        }
-    });
+        } else { alert("Network Error: Could not reach Google Sheets"); }
+    })
+    .catch(function(e){ alert("Fatal Sync Error: " + e.message); })
+    .finally(function(){ if (btn) { btn.disabled = false; btn.innerText = "Save Tasks"; } });
 }
 
 function openTaskList() {
@@ -149,10 +172,16 @@ function openTaskList() {
     
     showModal('<h2 style="margin-bottom:20px;text-align:center;">Daily Goals</h2><div id="tasks-container">' + t.loading + '</div>');
 
-    fetch('/api/tasks/' + date).then(function(r){ return r.json(); }).then(function(tasks){
+    fetch('/api/tasks/' + date)
+    .then(function(r){ 
+        if(!r.ok) throw new Error("Server status " + r.status);
+        return r.json(); 
+    })
+    .then(function(tasks){
         var cont = document.getElementById('tasks-container');
-        if (!tasks || tasks.length === 0) {
-            cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals for today 🎯</p>';
+        if (!cont) return;
+        if (!Array.isArray(tasks) || tasks.length === 0) {
+            cont.innerHTML = '<p style="text-align:center;color:#ccc;padding:20px;">No goals set for today 🎯</p>';
             return;
         }
         cont.innerHTML = tasks.map(function(tk){
@@ -162,6 +191,10 @@ function openTaskList() {
                    '<div style="display:flex; align-items:center; gap:12px;"><div class="item-icon ' + (ok ? 'feeding-bg' : 'task-bg') + '">' + (ok ? '✅' : '⭕') + '</div>' +
                    '<span style="' + (ok ? 'text-decoration:line-through;color:#aaa;' : 'font-weight:600;') + '">' + tk.Task + '</span></div></div>';
         }).join('');
+    })
+    .catch(function(e){
+        var cont = document.getElementById('tasks-container');
+        if(cont) cont.innerHTML = '<p style="color:red;padding:20px;text-align:center;">Load Error: ' + e.message + '<br><br><button onclick="openTasksInput()" style="background:#eee;border:none;padding:10px;border-radius:10px;">Retry / Set Tasks</button></p>';
     });
 }
 
@@ -179,19 +212,17 @@ function toggleTaskStatus(name, next) {
 }
 
 function openMealPlan(slot) {
-    var t = translations[currentLanguage] || translations['en'];
     var date = getTodayISO();
     var s = slot || 'breakfast';
-
-    var h = '<h2 style="margin-bottom:20px;text-align:center;">Daily Menu</h2>' +
+    
+    showModal('<h2 style="margin-bottom:20px;text-align:center;">Daily Menu</h2>' +
             '<div class="form-group"><label>Date</label><input type="date" id="meal-date" value="' + date + '"></div>' +
             '<div class="form-group"><label>Type</label><select id="meal-type">' +
             '<option value="breakfast">Breakfast</option><option value="lunch">Lunch</option><option value="dinner">Dinner</option>' +
             '</select></div>' +
             '<div class="form-group"><label>Dish Name</label><textarea id="meal-content" rows="3"></textarea></div>' +
-            '<button class="btn-primary-pill" onclick="saveMealData()">Save Meal</button>';
+            '<button class="btn-primary-pill" id="btn-save-meal" onclick="saveMealData()">Save Meal</button>');
     
-    showModal(h);
     document.getElementById('meal-type').value = s;
 
     var load = function() {
@@ -214,6 +245,9 @@ function openMealPlan(slot) {
 }
 
 function saveMealData() {
+    var btn = document.getElementById('btn-save-meal');
+    if (btn) { btn.disabled = true; btn.innerText = "Saving..."; }
+    
     var date = document.getElementById('meal-date').value;
     var type = document.getElementById('meal-type').value;
     var dish = document.getElementById('meal-content').value;
@@ -227,35 +261,26 @@ function saveMealData() {
             } catch(e) { p = { breakfast: res.meal_plan }; }
         }
         p[type] = dish;
-
-        return fetch('/api/meal-plan', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ date: date, meal_plan: JSON.stringify(p) })
-        });
+        return fetch('/api/meal-plan', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ date: date, meal_plan: JSON.stringify(p) }) });
     }).then(function(r){
         if (r.ok) {
             if (dish) {
                 var tm = { breakfast: '09:00', lunch: '12:00', dinner: '18:00' };
-                fetch('/api/daily', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ type: 'food', time: tm[type], detail1: type.toUpperCase() + ": " + dish, date: date })
-                });
+                fetch('/api/daily', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ type: 'food', time: tm[type], detail1: type.toUpperCase() + ": " + dish, date: date }) });
             }
             try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
             closeForm();
             refreshOverviewPreviews();
         }
-    });
+    }).finally(function(){ if (btn) { btn.disabled = false; btn.innerText = "Save Meal"; } });
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Generic ──────────────────────────────────────────────────────────────────
 
-function showModal(html) {
+function showModal(h) {
     var over = document.getElementById('form-modal');
     var body = document.getElementById('modal-body');
-    if (over && body) { body.innerHTML = html; over.classList.add('active'); }
+    if (over && body) { body.innerHTML = h; over.classList.add('active'); }
 }
 
 function closeForm() { document.getElementById('form-modal').classList.remove('active'); }
@@ -308,7 +333,7 @@ function saveRecord(type) {
         type: type, date: document.getElementById('f-date').value, 
         time: document.getElementById('f-time') ? document.getElementById('f-time').value : document.getElementById('f-start').value, 
         detail1: document.getElementById('f-detail1') ? document.getElementById('f-detail1').value : "", 
-        detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : (document.getElementById('f-end') ? document.getElementById('f-end').value : "") 
+        detail2: document.getElementById('f-detail2') ? document.getElementById('f-detail2').value : ""
     };
     fetch('/api/daily', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(d) }).then(function(){ closeForm(); refreshOverviewPreviews(); });
 }
@@ -317,7 +342,7 @@ function loadTimeline(date) {
     var cont = document.getElementById('timeline-list');
     cont.innerHTML = '<p style="text-align:center;padding:20px;">Loading...</p>';
     fetch('/api/daily/' + date).then(function(r){ return r.json(); }).then(function(data){
-        if (!data || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
+        if (!Array.isArray(data) || data.length === 0) { cont.innerHTML = '<p style="text-align:center;padding:20px;">No logs.</p>'; return; }
         data.sort(function(a,b){ return a.Time.localeCompare(b.Time); });
         cont.innerHTML = data.map(function(x){
             return '<div class="timeline-entry"><div class="time-box">' + x.Time + '</div><div class="entry-details"><strong>' + x.Type.toUpperCase() + '</strong><span>' + x.Detail1 + '</span></div></div>';
@@ -325,14 +350,7 @@ function loadTimeline(date) {
     });
 }
 
-// ── Init ────────────────────────────────────────────────────────────────────
-function initApp() {
-    console.log("App Initialization Started");
-    setLanguage('en');
-    switchTab('daily');
-    // Force a data refresh for the current local date
-    refreshOverviewPreviews();
-    console.log("App Ready for date:", getTodayISO());
-}
-
-initApp();
+// ── Start ──────────────────────────────────────────────────────────────────
+setLanguage('en');
+switchTab('daily');
+console.log("Mini-App Diagnostics: Standardized.");

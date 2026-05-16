@@ -37,33 +37,27 @@ def get_sh():
         if not sh:
             try: sh = gc.open(SPREADSHEET_NAME)
             except gspread.SpreadsheetNotFound: sh = gc.create(SPREADSHEET_NAME)
-        # Ensure worksheets with correct headers
-        def ensure(name, headers):
-            try: 
-                s = sh.worksheet(name)
-                # Critical Migration: Check if headers match
-                actual = s.row_values(1)
-                if actual != headers:
-                    logger.warning(f"Header mismatch in {name}. Re-initializing...")
-                    s.clear()
+        
+        # Simple worksheet existence check (no header checks to save API calls)
+        if sh:
+            def ensure(name, headers):
+                try: return sh.worksheet(name)
+                except gspread.WorksheetNotFound:
+                    s = sh.add_worksheet(title=name, rows="1000", cols="20")
                     s.append_row(headers)
-                return s
-            except gspread.WorksheetNotFound:
-                s = sh.add_worksheet(title=name, rows="1000", cols="20")
-                s.append_row(headers)
-                return s
-
-        ensure("Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
-        ensure("Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
-        ensure("Daily_Tasks", ["Date", "Task", "Status"])
-        ensure("Meal_Plans", ["Date", "MealPlan", "LastUpdated"])
-
+                    return s
+            
+            ensure("Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
+            ensure("Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
+            ensure("Daily_Tasks", ["Date", "Task", "Status"])
+            ensure("Meal_Plans", ["Date", "MealPlan", "LastUpdated"])
         return sh
     except Exception as e:
-        logger.error(f"GSheets Error: {e}")
+        logger.error(f"Spreadsheet Error: {e}")
         return None
 
-# ── Tasks ──
+# ── Task Logic ──────────────────────────────────────────────────────────────
+
 def set_daily_tasks(date_str, tasks_list):
     sh = get_sh()
     if not sh: return False
@@ -74,12 +68,17 @@ def set_daily_tasks(date_str, tasks_list):
         for r in records:
             if str(r.get("Date")) != date_str:
                 new_rows.append([r.get("Date"), r.get("Task"), r.get("Status")])
-        for t in tasks_list:
-            if t.strip(): new_rows.append([date_str, t.strip(), "Pending"])
+        for task_name in tasks_list:
+            if task_name.strip():
+                new_rows.append([date_str, task_name.strip(), "Pending"])
+        
         sheet.clear()
+        # Overwrite all data
         sheet.update("A1", new_rows)
         return True
-    except: return False
+    except Exception as e:
+        logger.error(f"set_daily_tasks error: {e}")
+        return False
 
 def get_daily_tasks(date_str):
     sh = get_sh()
@@ -88,7 +87,9 @@ def get_daily_tasks(date_str):
         sheet = sh.worksheet("Daily_Tasks")
         records = sheet.get_all_records()
         return [r for r in records if str(r.get("Date")) == date_str]
-    except: return []
+    except Exception as e:
+        logger.error(f"get_daily_tasks error: {e}")
+        return []
 
 def update_task_status(date_str, task_name, status):
     sh = get_sh()
@@ -100,10 +101,12 @@ def update_task_status(date_str, task_name, status):
             if str(r.get("Date")) == date_str and str(r.get("Task")) == task_name:
                 sheet.update_cell(i + 2, 3, status)
                 return True
-    except: pass
+    except Exception as e:
+        logger.error(f"update_task_status error: {e}")
     return False
 
-# ── Meals ──
+# ── Meal Logic ──────────────────────────────────────────────────────────────
+
 def log_meal_plan(date_str, meal_plan):
     sh = get_sh()
     if not sh: return False
@@ -112,6 +115,7 @@ def log_meal_plan(date_str, meal_plan):
         cell = None
         try: cell = sheet.find(date_str, in_column=1)
         except gspread.CellNotFound: pass
+        
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if cell:
             sheet.update_cell(cell.row, 2, meal_plan)
@@ -119,7 +123,9 @@ def log_meal_plan(date_str, meal_plan):
         else:
             sheet.append_row([date_str, meal_plan, now_str])
         return True
-    except: return False
+    except Exception as e:
+        logger.error(f"log_meal_plan error: {e}")
+        return False
 
 def get_meal_plan(date_str):
     sh = get_sh()
@@ -128,48 +134,66 @@ def get_meal_plan(date_str):
         sheet = sh.worksheet("Meal_Plans")
         records = sheet.get_all_records()
         for r in records:
-            if str(r.get("Date")) == date_str: return r.get("MealPlan", "")
-    except: pass
+            if str(r.get("Date")) == date_str:
+                return r.get("MealPlan", "")
+    except Exception as e:
+        logger.error(f"get_meal_plan error: {e}")
     return ""
 
-# ── Records ──
-def log_daily_record(record_type, time, detail1="", detail2="", detail3="", remarks="", date_str=None):
-    if not date_str: date_str = datetime.now().strftime("%Y-%m-%d")
+# ── Direct Header Fix (Manual trigger only) ──────────────────────────────────
+
+def force_fix_headers():
     sh = get_sh()
     if not sh: return False
     try:
-        sh.worksheet("Daily_Records").append_row([date_str, record_type, time, detail1, detail2, detail3, remarks])
+        targets = {
+            "Daily_Tasks": ["Date", "Task", "Status"],
+            "Meal_Plans": ["Date", "MealPlan", "LastUpdated"]
+        }
+        for name, headers in targets.items():
+            ws = sh.worksheet(name)
+            ws.clear()
+            ws.append_row(headers)
         return True
     except: return False
+
+# ── Record Logic (Standard) ──────────────────────────────────────────────────
+
+def log_daily_record(record_type, time, detail1="", detail2="", detail3="", remarks="", date_str=None):
+    if not date_str: date_str = datetime.now().strftime("%Y-%m-%d")
+    sh = get_sh()
+    if sh:
+        try:
+            sheet = sh.worksheet("Daily_Records")
+            sheet.append_row([date_str, record_type, time, detail1, detail2, detail3, remarks])
+            return True
+        except: pass
+    return False
 
 def get_daily_records(date_str):
     sh = get_sh()
     if not sh: return []
     try:
-        records = sh.worksheet("Daily_Records").get_all_records()
-        return [r for r in records if str(r.get("Date")) == date_str]
+        sheet = sh.worksheet("Daily_Records")
+        all_records = sheet.get_all_records()
+        return [r for r in all_records if str(r.get("Date")) == date_str]
     except: return []
-
-def get_all_daily_records():
-    sh = get_sh()
-    if not sh: return []
-    try: return sh.worksheet("Daily_Records").get_all_records()
-    except: return []
-
-def log_growth_metric(weight, height, head, date_str=None):
-    if not date_str: date_str = datetime.now().strftime("%Y-%m-%d")
-    sh = get_sh()
-    if not sh: return False
-    try:
-        sh.worksheet("Growth_Metrics").append_row([date_str, weight, height, head])
-        return True
-    except: return False
 
 def get_growth_metrics():
     sh = get_sh()
     if not sh: return []
     try: return sh.worksheet("Growth_Metrics").get_all_records()
     except: return []
+
+def log_growth_metric(weight, height, head, date_str=None):
+    if not date_str: date_str = datetime.now().strftime("%Y-%m-%d")
+    sh = get_sh()
+    if sh:
+        try:
+            sh.worksheet("Growth_Metrics").append_row([date_str, weight, height, head])
+            return True
+        except: pass
+    return False
 
 def get_service_account_email():
     creds = get_credentials()

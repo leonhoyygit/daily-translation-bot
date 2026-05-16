@@ -234,6 +234,21 @@ async def save_meal_plan(data: dict):
         raise HTTPException(status_code=500, detail="Failed to save meal plan")
     return {"status": "success"}
 
+@app.get("/api/health")
+async def health_check():
+    email = sheets_db.get_service_account_email()
+    sh = sheets_db.get_sh()
+    return {
+        "status": "ok" if sh else "error",
+        "service_account": email,
+        "spreadsheet": "Connected" if sh else "Not Connected"
+    }
+
+@app.post("/api/force-fix-headers")
+async def fix_headers():
+    success = sheets_db.force_fix_headers()
+    return {"status": "success" if success else "error"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
