@@ -4,36 +4,23 @@ try { tg.expand(); } catch(e) {}
 
 var currentLanguage = 'en';
 
-function getHKDate(isLogical) {
+function getHKDate() {
     var now = new Date();
-    // For logical day (Today), we subtract 4 hours so the day rolls over at 4 AM HK time
-    var target = isLogical ? new Date(now.getTime() - 4 * 60 * 60 * 1000) : now;
-    
     var formatter = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Asia/Hong_Kong',
         year: 'numeric', month: 'numeric', day: 'numeric',
         hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false
     });
-    var parts = formatter.formatToParts(target);
+    var parts = formatter.formatToParts(now);
     var d = {};
     parts.forEach(function(p) { if(p.type !== 'literal') d[p.type] = p.value; });
     
-    // If it's logical mode, we still want the REAL time for logging purposes, 
-    // but the DATE components from the logical target.
-    if (isLogical) {
-        var realParts = formatter.formatToParts(now);
-        var r = {};
-        realParts.forEach(function(p) { if(p.type !== 'literal') r[p.type] = p.value; });
-        d.hour = r.hour; d.minute = r.minute; d.second = r.second;
-    }
-
-    // Create a date object with these components. 
-    // Note: This Date object is in the LOCAL timezone but carries HK clock values.
+    // Create a date object with HK components. 
     return new Date(d.year, d.month - 1, d.day, d.hour, d.minute, d.second);
 }
 
 function getTodayISO() {
-    var d = getHKDate(true); // Use logical date
+    var d = getHKDate();
     var y = d.getFullYear();
     var m = ("0" + (d.getMonth() + 1)).slice(-2);
     var day = ("0" + d.getDate()).slice(-2);
@@ -41,7 +28,7 @@ function getTodayISO() {
 }
 
 var selectedDate = getTodayISO();
-var viewDate = getHKDate(true); // Use logical date for calendar view too
+var viewDate = getHKDate();
 
 var translations = {
     en: {
@@ -333,7 +320,7 @@ function setLanguage(l) {
 }
 
 function checkBirthday() {
-    var now = getHKDate(true); // Use logical date
+    var now = getHKDate(); // Use strict HK date
     if (now.getMonth() === 4 && now.getDate() === 16) {
         document.body.classList.add('birthday-mode');
         var badge = document.getElementById('birthday-badge');
