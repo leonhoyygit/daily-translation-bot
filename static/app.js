@@ -5,11 +5,8 @@ try { tg.expand(); } catch(e) {}
 var currentLanguage = 'en';
 
 function getTodayISO() {
-    var d = new Date();
-    var y = d.getFullYear();
-    var m = ("0" + (d.getMonth() + 1)).slice(-2);
-    var day = ("0" + d.getDate()).slice(-2);
-    return y + "-" + m + "-" + day;
+    // Explicitly force Hong Kong Time (UTC+8)
+    return new Date().toLocaleDateString('en-CA', {timeZone: 'Asia/Hong_Kong'});
 }
 
 var selectedDate = getTodayISO();
