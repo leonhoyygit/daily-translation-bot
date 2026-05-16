@@ -84,20 +84,31 @@ def get_or_create_spreadsheet():
         # Ensure all required worksheets exist
         ensure_worksheet(sh, "Daily_Records", ["Date", "Type", "Time", "Detail1", "Detail2", "Detail3", "Remarks"])
         ensure_worksheet(sh, "Growth_Metrics", ["Date", "Weight (kg)", "Height (cm)", "Head (cm)"])
-        tasks_sheet = ensure_worksheet(sh, "Daily_Tasks", ["Task", "Status", "LastUpdated"])
+        ensure_worksheet(sh, "Daily_Tasks", ["Date", "Task", "Status"])
         ensure_worksheet(sh, "Meal_Plans", ["Date", "MealPlan", "LastUpdated"])
         
-        # Add default tasks if Daily_Tasks was just created or is empty (only has headers)
-        if len(tasks_sheet.get_all_values()) <= 1:
-            default_tasks = [
-                ["Morning Feeding", "Pending", ""],
-                ["Vitamin AD", "Pending", ""],
-                ["Bath Time", "Pending", ""],
-                ["Tummy Time", "Pending", ""]
-            ]
-            tasks_sheet.append_rows(default_tasks)
-
     return sh
+
+def set_tasks(date_str, tasks_list):
+    sh = get_or_create_spreadsheet()
+    if sh:
+        sheet = sh.worksheet("Daily_Tasks")
+        # Remove existing tasks for this date
+        records = sheet.get_all_records()
+        new_rows = [["Date", "Task", "Status"]]
+        for r in records:
+            if str(r.get("Date")) != date_str:
+                new_rows.append([r.get("Date"), r.get("Task"), r.get("Status")])
+        
+        # Add new tasks
+        for task_name in tasks_list:
+            if task_name.strip():
+                new_rows.append([date_str, task_name.strip(), "Pending"])
+        
+        sheet.clear()
+        sheet.update("A1", new_rows)
+        return True
+    return False
 
 def log_meal_plan(date_str, meal_plan):
     from datetime import datetime
@@ -176,25 +187,24 @@ def get_growth_metrics():
         return sheet.get_all_records()
     return []
 
-def get_tasks():
+def get_tasks(date_str):
     sh = get_or_create_spreadsheet()
     if sh:
         sheet = sh.worksheet("Daily_Tasks")
-        return sheet.get_all_records()
+        records = sheet.get_all_records()
+        return [r for r in records if str(r.get("Date")) == date_str]
     return []
 
-def update_task(task_name, status):
-    from datetime import datetime
+def update_task(date_str, task_name, status):
     sh = get_or_create_spreadsheet()
     if sh:
         sheet = sh.worksheet("Daily_Tasks")
-        cells = sheet.findall(task_name)
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        if cells:
-            row = cells[0].row
-            sheet.update_cell(row, 2, status)
-            sheet.update_cell(row, 3, now_str)
-        else:
-            sheet.append_row([task_name, status, now_str])
-        return True
+        records = sheet.get_all_records()
+        found = False
+        for i, r in enumerate(records):
+            if str(r.get("Date")) == date_str and r.get("Task") == task_name:
+                sheet.update_cell(i + 2, 3, status)
+                found = True
+                break
+        return found
     return False

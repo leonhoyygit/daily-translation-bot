@@ -59,7 +59,10 @@ const translations = {
         dinner: "Dinner",
         meal_type: "Meal Type",
         dish_name: "Dish Name",
-        daily_menu: "Daily Menu"
+        daily_menu: "Daily Menu",
+        set_goals: "Set Daily Goals",
+        enter_tasks: "Enter tasks (one per line)",
+        save_tasks: "Save Tasks"
     },
     id: {
         baby_quote: "Tumbuh dengan cinta ❤️",
@@ -113,7 +116,10 @@ const translations = {
         dinner: "Makan Malam",
         meal_type: "Tipe Makan",
         dish_name: "Nama Masakan",
-        daily_menu: "Menu Harian"
+        daily_menu: "Menu Harian",
+        set_goals: "Atur Target",
+        enter_tasks: "Masukkan tugas (satu per baris)",
+        save_tasks: "Simpan Tugas"
     },
     zh: {
         baby_quote: "在愛中茁壯成長 ❤️",
@@ -167,7 +173,10 @@ const translations = {
         dinner: "晚餐",
         meal_type: "餐點類型",
         dish_name: "菜名",
-        daily_menu: "今日菜單"
+        daily_menu: "今日菜單",
+        set_goals: "設定今日目標",
+        enter_tasks: "輸入任務（每行一個）",
+        save_tasks: "儲存任務"
     }
 };
 
@@ -219,7 +228,7 @@ async function refreshOverviewPreviews() {
             }
         });
 
-        const taskRes = await fetch('/api/tasks');
+        const taskRes = await fetch(`/api/tasks/${date}`);
         const tasks = await taskRes.json();
         const total = tasks.length;
         const done = tasks.filter(t => t.Status === 'Done').length;
@@ -335,15 +344,21 @@ async function openTaskList() {
     const overlay = document.getElementById('form-modal');
     const body = document.getElementById('modal-body');
     const t = translations[currentLanguage];
+    const date = new Date().toISOString().split('T')[0];
     
     body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.task_list}</h2>
         <div id="tasks-container" style="margin-bottom:20px;">${t.loading}</div>`;
     
     overlay.classList.add('active');
     
-    const res = await fetch('/api/tasks');
+    const res = await fetch(`/api/tasks/${date}`);
     const tasks = await res.json();
     
+    if (tasks.length === 0) {
+        document.getElementById('tasks-container').innerHTML = `<p style="text-align:center;color:#ccc;padding:20px;">No goals set for today 🎯</p>`;
+        return;
+    }
+
     let html = '';
     tasks.forEach(task => {
         const isDone = task.Status === 'Done';
@@ -360,17 +375,71 @@ async function openTaskList() {
 }
 
 async function toggleTask(name, newStatus) {
+    const date = new Date().toISOString().split('T')[0];
     try {
         await fetch('/api/tasks', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ name: name, status: newStatus })
+            body: JSON.stringify({ name: name, status: newStatus, date: date })
         });
         tg.HapticFeedback.impactOccurred('light');
         openTaskList(); // Refresh list
         refreshOverviewPreviews();
     } catch (e) {
         tg.showAlert(translations[currentLanguage].error);
+    }
+}
+
+async function openTasksInput() {
+    const overlay = document.getElementById('form-modal');
+    const body = document.getElementById('modal-body');
+    const t = translations[currentLanguage];
+    const date = new Date().toISOString().split('T')[0];
+    
+    body.innerHTML = `<h2 style="margin-bottom:20px;text-align:center;">${t.set_goals}</h2>
+        <div class="form-group">
+            <label>${t.calendar}</label>
+            <input type="date" id="tasks-date" value="${date}">
+        </div>
+        <div class="form-group">
+            <label>${t.enter_tasks}</label>
+            <textarea id="tasks-content" rows="8" placeholder="e.g.\nMorning Feeding\nVitamin AD\nBath Time"></textarea>
+        </div>
+        <button class="btn-primary-pill" onclick="saveTasks()">${t.save_tasks}</button>`;
+    
+    overlay.classList.add('active');
+    
+    // Pre-fill existing
+    const res = await fetch(`/api/tasks/${date}`);
+    const tasks = await res.json();
+    if (tasks.length > 0) {
+        document.getElementById('tasks-content').value = tasks.map(t => t.Task).join('\n');
+    }
+}
+
+async function saveTasks() {
+    const btn = document.querySelector('.modal-sheet .btn-primary-pill');
+    const date = document.getElementById('tasks-date').value;
+    const content = document.getElementById('tasks-content').value;
+    const tasks = content.split('\n').filter(t => t.trim() !== "");
+    
+    btn.disabled = true;
+    btn.innerText = translations[currentLanguage].loading;
+    
+    try {
+        await fetch('/api/set-tasks', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ date: date, tasks: tasks })
+        });
+        tg.HapticFeedback.notificationOccurred('success');
+        closeForm();
+        refreshOverviewPreviews();
+    } catch (e) {
+        tg.showAlert(translations[currentLanguage].error);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = translations[currentLanguage].save_tasks;
     }
 }
 

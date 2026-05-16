@@ -205,15 +205,22 @@ async def get_growth():
     records = sheets_db.get_growth_metrics()
     return records
 
-@app.get("/api/tasks")
-async def get_tasks():
-    return sheets_db.get_tasks()
+@app.get("/api/tasks/{date_str}")
+async def get_tasks(date_str: str):
+    return sheets_db.get_tasks(date_str)
 
 @app.post("/api/tasks")
-async def update_task(task: dict):
-    success = sheets_db.update_task(task.get("name"), task.get("status"))
+async def update_task(data: dict):
+    success = sheets_db.update_task(data.get("date"), data.get("name"), data.get("status"))
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update task")
+    return {"status": "success"}
+
+@app.post("/api/set-tasks")
+async def set_tasks(data: dict):
+    success = sheets_db.set_tasks(data.get("date"), data.get("tasks"))
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to set tasks")
     return {"status": "success"}
 
 @app.get("/api/meal-plan/{date_str}")
