@@ -304,6 +304,67 @@ function switchTab(t) {
     document.querySelectorAll('.nav-btn').forEach(function(x) { x.classList.toggle('active', x.id === 'nav-' + t); });
     if (t === 'activities') loadTimeline(selectedDate);
     if (t === 'calendar') renderCalendar();
+    if (t === 'growth') { loadGrowthHistory(); setTimeout(initCharts, 100); }
+}
+
+function loadGrowthHistory() {
+    fetch('/api/growth').then(function(r){ return r.json(); }).then(function(data){
+        updateCharts(data);
+    });
+}
+
+function initCharts() {
+    var common = (label, color) => ({
+        type: 'line',
+        data: { labels: [], datasets: [{ label: label, data: [], borderColor: color, backgroundColor: color + '11', fill: true, tension: 0.4, pointRadius: 4 }] },
+        options: { 
+            responsive: true, 
+            plugins: { legend: { display: false } }, 
+            scales: { 
+                x: { display: true, grid: { display: false }, ticks: { font: { size: 10 }, color: '#ccc' } }, 
+                y: { grid: { display: false } } 
+            } 
+        }
+    });
+    if (charts.weight) charts.weight.destroy(); 
+    if (charts.height) charts.height.destroy();
+    if (charts.head) charts.head.destroy();
+
+    charts.weight = new Chart(document.getElementById('weightChart'), common('Weight', '#ff4d4d'));
+    charts.height = new Chart(document.getElementById('heightChart'), common('Height', '#ffb6c1'));
+    charts.head = new Chart(document.getElementById('headChart'), common('Head', '#ffd700'));
+}
+
+function updateCharts(data) {
+    if (!data || data.length === 0 || !charts.weight) return;
+    var labels = data.map(h => h.Date);
+    charts.weight.data.labels = labels; charts.weight.data.datasets[0].data = data.map(h => h['Weight (kg)']); charts.weight.update();
+    charts.height.data.labels = labels; charts.height.data.datasets[0].data = data.map(h => h['Height (cm)']); charts.height.update();
+    charts.head.data.labels = labels; charts.head.data.datasets[0].data = data.map(h => h['Head (cm)']); charts.head.update();
+}
+
+async function saveGrowth() {
+    var date = document.getElementById('growth-date').value;
+    var weight = document.getElementById('growth-weight').value;
+    var height = document.getElementById('growth-height').value;
+    var head = document.getElementById('growth-head').value;
+    var t = translations[currentLanguage] || translations['en'];
+
+    if (!weight || !height) { alert("Please enter weight and height"); return; }
+
+    fetch('/api/growth', { 
+        method: 'POST', 
+        headers: {'Content-Type': 'application/json'}, 
+        body: JSON.stringify({ date: date, weight: weight, height: height, head: head }) 
+    }).then(function(r){
+        if (r.ok) {
+            try { tg.HapticFeedback.notificationOccurred('success'); } catch(e){}
+            loadGrowthHistory();
+            alert(t.success || "Success! 🥯");
+        } else {
+            alert(t.error || "Error! 🍞");
+        }
+    });
 }
 
 function loadTimeline(date) {
@@ -483,4 +544,5 @@ function nextMonth() {
 // ── Initialization ───────────────────────────────────────────────────────────
 setLanguage('en');
 switchTab('daily');
+if (document.getElementById('growth-date')) document.getElementById('growth-date').value = selectedDate;
 renderCalendar();
