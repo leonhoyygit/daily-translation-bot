@@ -3,6 +3,7 @@ var tg = window.Telegram.WebApp;
 try { tg.expand(); } catch(e) {}
 
 var currentLanguage = 'en';
+var charts = {};
 
 function getHKDate() {
     var now = new Date();
@@ -304,7 +305,7 @@ function switchTab(t) {
     document.querySelectorAll('.nav-btn').forEach(function(x) { x.classList.toggle('active', x.id === 'nav-' + t); });
     if (t === 'activities') loadTimeline(selectedDate);
     if (t === 'calendar') renderCalendar();
-    if (t === 'growth') { loadGrowthHistory(); setTimeout(initCharts, 100); }
+    if (t === 'growth') { initCharts(); loadGrowthHistory(); }
 }
 
 function loadGrowthHistory() {
